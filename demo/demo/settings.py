@@ -44,8 +44,6 @@ EXTERNAL_APPS = [
     
     'product_categories',
     'homepage',
-    'sale'
-   
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS

@@ -45,7 +45,7 @@
     <h2 class="section-title">ROMANCE</h2>
 
     <div class="book-grid">
-      {% for book in salebooks %}
+      {% for book in romance_books %}
         <div class="book-card">
           <img src="{{ book.image.url }}" alt="{{ book.title }}">
           {% if book.is_on_sale %}
