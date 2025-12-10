@@ -143,15 +143,14 @@
     <section class="book-sale">
       <h2 class="section-title">NEW ARRIVALS</h2>
       <div class="book-grid">
-        {% for book in new_arrivals_books %}
+        {% for book in new_arrivals_books|slice:":10"%}
         <a href="{% url 'book_detail' book.slug %}" class="book-card-link">
           <div class="book-card">
             <img src="{{ book.image.url }}" alt="{{ book.title }}" />
             <h3 class="book-title">{{ book.title }}</h3>
             {% if book.old_price %}
             <p class="price">
-              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{
-              book.price }}
+              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{ book.price }}
             </p>
             {% else %}
             <p class="price">Rs. {{ book.price }}</p>
@@ -183,15 +182,14 @@
     <section class="book-sale">
       <h2 class="section-title">MANGA & COMICS</h2>
       <div class="book-grid">
-        {% for book in manga_comics_books %}
+        {% for book in manga_comics_books|slice:":10"%}
         <a href="{% url 'book_detail' book.slug %}" class="book-card-link">
           <div class="book-card">
             <img src="{{ book.image.url }}" alt="{{ book.title }}" />
             <h3 class="book-title">{{ book.title }}</h3>
             {% if book.old_price %}
             <p class="price">
-              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{
-              book.price }}
+              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{ book.price }}
             </p>
             {% else %}
             <p class="price">Rs. {{ book.price }}</p>
@@ -223,15 +221,14 @@
     <section class="book-sale">
       <h2 class="section-title">MOST READ COMBOS</h2>
       <div class="book-grid">
-        {% for book in most_read_combos_books %}
+        {% for book in most_read_combos_books|slice:":10"%}
         <a href="{% url 'book_detail' book.slug %}" class="book-card-link">
           <div class="book-card">
             <img src="{{ book.image.url }}" alt="{{ book.title }}" />
             <h3 class="book-title">{{ book.title }}</h3>
             {% if book.old_price %}
             <p class="price">
-              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{
-              book.price }}
+              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{ book.price }}
             </p>
             {% else %}
             <p class="price">Rs. {{ book.price }}</p>
@@ -263,7 +260,7 @@
     <section class="book-sale">
       <h2 class="section-title">SELF IMPROVEMENTS</h2>
       <div class="book-grid">
-        {% for book in self_improvements_books %}
+        {% for book in self_improvements_books|slice:":10"%}
         <a href="{% url 'book_detail' book.slug %}" class="book-card-link">
           <div class="book-card">
             <img src="{{ book.image.url }}" alt="{{ book.title }}" />
@@ -271,8 +268,7 @@
             <h3 class="book-title">{{ book.title }}</h3>
             {% if book.old_price %}
             <p class="price">
-              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{
-              book.price }}
+              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{ book.price }}
             </p>
             {% else %}
             <p class="price">Rs. {{ book.price }}</p>
@@ -304,7 +300,7 @@
     <section class="book-sale">
       <h2 class="section-title">ROMANCE ON SALE</h2>
       <div class="book-grid">
-        {% for book in romance_sale_books %}
+        {% for book in romance_sale_books|slice:":10"%}
         <a href="{% url 'book_detail' book.slug %}" class="book-card-link">
           <div class="book-card">
             <img src="{{ book.image.url }}" alt="{{ book.title }}" />
@@ -312,8 +308,7 @@
             <h3 class="book-title">{{ book.title }}</h3>
             {% if book.old_price %}
             <p class="price">
-              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{
-              book.price }}
+              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{ book.price }}
             </p>
             {% else %}
             <p class="price">Rs. {{ book.price }}</p>
@@ -345,15 +340,14 @@
     <section class="book-sale">
       <h2 class="section-title">HINDI BOOKS</h2>
       <div class="book-grid">
-        {% for book in hindi_books %}
+        {% for book in hindi_books|slice:":10"%}
         <a href="{% url 'book_detail' book.slug %}" class="book-card-link">
           <div class="book-card">
             <img src="{{ book.image.url }}" alt="{{ book.title }}" />
             <h3 class="book-title">{{ book.title }}</h3>
             {% if book.old_price %}
             <p class="price">
-              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{
-              book.price }}
+              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{ book.price }}
             </p>
             {% else %}
             <p class="price">Rs. {{ book.price }}</p>
@@ -385,15 +379,14 @@
     <section class="book-sale">
       <h2 class="section-title">BUSINESS & STOCK-MARKET</h2>
       <div class="book-grid">
-        {% for book in business_stock_market_books %}
+        {% for book in business_stock_market_books|slice:":10"%}
         <a href="{% url 'book_detail' book.slug %}" class="book-card-link">
           <div class="book-card">
             <img src="{{ book.image.url }}" alt="{{ book.title }}" />
             <h3 class="book-title">{{ book.title }}</h3>
             {% if book.old_price %}
             <p class="price">
-              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{
-              book.price }}
+              <span class="old">Rs. {{ book.old_price }}</span> Rs. {{ book.price }}
             </p>
             {% else %}
             <p class="price">Rs. {{ book.price }}</p>
