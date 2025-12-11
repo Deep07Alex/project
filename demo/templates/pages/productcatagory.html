@@ -1,118 +1,136 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Collections</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
-  <link rel="stylesheet" href="{% static 'css/productcatagory.css' %}">
-</head>
-<body>
-  <!-- Cart Sidebar -->
-  <div class="overlay" id="cartOverlay"></div>
-  <div class="cart-sidebar" id="cartSidebar">
-    <div class="cart-header">
-      <h2>Shopping Cart (<span id="cartCount">0</span>)</h2>
-      <span class="close-btn" id="closeCartBtn">&times;</span>
-    </div>
-    <div class="cart-items" id="cartItems">
-      <p class="empty-cart">Your cart is empty</p>
-    </div>
-    <div class="cart-footer" id="cartFooter" style="display: none;">
-      <div class="cart-total">
-        <span>Total:</span>
-        <span id="cartTotal">₹0.00</span>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Collections</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="{% static 'css/productcatagory.css' %}" />
+  </head>
+  <body>
+    <!-- Cart Sidebar -->
+    <div class="overlay" id="cartOverlay"></div>
+    <div class="cart-sidebar" id="cartSidebar">
+      <div class="cart-header">
+        <h2>Shopping Cart (<span id="cartCount">0</span>)</h2>
+        <span class="close-btn" id="closeCartBtn">&times;</span>
       </div>
-      <button class="checkout-btn" onclick="window.location.href='/checkout/'">
-        Proceed to Checkout
-      </button>
+      <div class="cart-items" id="cartItems">
+        <p class="empty-cart">Your cart is empty</p>
+      </div>
+      <div class="cart-footer" id="cartFooter" style="display: none">
+        <div class="cart-total">
+          <span>Total:</span>
+          <span id="cartTotal">₹0.00</span>
+        </div>
+        <button
+          class="checkout-btn"
+          onclick="window.location.href='/checkout/'"
+        >
+          Proceed to Checkout
+        </button>
+      </div>
     </div>
-  </div>
 
-  <!-- Header Navbar -->
-  <header>
-    <div class="navbar">
-      <div class="nav-logo">
-        <div class="logo"></div>
-      </div>
-      <div class="nav-links">
-        <a href="/" class="active">Home</a>
-        <a href="/productcatagory/">Product Categories</a>
-        <a href="/aboutus/">About Us</a>
-        <a href="#">Return & Replacement</a>
-        <a href="/contactinformation/">Contact Us</a>
-        <a href="#">Terms & Conditions</a>
-        <a href="#">Privacy Policy</a>
-      </div>
-      <div class="nav-icons">
-        <div class="search-container">
-          <input type="text" class="search-input" placeholder="Search books..." id="searchInput">
-          <div class="search-btn" id="searchBtn">
-            <i class="fa fa-search"></i>
+    <!-- Header Navbar -->
+    <header>
+      <div class="navbar">
+        <div class="nav-logo">
+          <div class="logo"></div>
+        </div>
+        <div class="nav-links">
+          <a href="#" class="active" id="homeLink">Home</a>
+          <a href="#">Product Categories</a>
+          <a href="#">Bulk Purchase</a>
+          <a href="#">About Us</a>
+          <a href="#">Return & Replacement</a>
+          <a href="#">Contact Us</a>
+          <a href="#">Terms & Conditions</a>
+          <a href="#">Privacy Policy</a>
+        </div>
+        <div class="nav-icons">
+          <div class="cart-icon-container" id="cartIcon">
+            <i class="fa fa-shopping-cart"></i>
+            <span class="cart-count" id="cartCountBadge" style="display: none"
+              >0</span
+            >
           </div>
-          <div id="searchDropdown" class="search-dropdown"></div>
-        </div>
-        <div class="cart-icon-container" id="cartIcon">
-          <i class="fa fa-shopping-cart"></i>
-          <span class="cart-count" id="cartCountBadge" style="display: none;">0</span>
         </div>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <!-- Collections Section -->
-  <h2 class="heading">Collections</h2>
+    <!-- Collections Section -->
+    <h2 class="heading">Collections</h2>
 
-  <section class="collections">
-  {% for category in products_category %}
-    <a href="{% url 'product_category_detail' category.type %}" class="collection-item">
-      {% if category.image %}
-        <img src="{{ category.image.url }}" alt="{{ category.get_type_display }}">
-      {% else %}
+    <section class="collections">
+      {% for category in products_category %}
+      <a
+        href="{% url 'product_category_detail' category.type %}"
+        class="collection-item"
+      >
+        {% if category.image %}
+        <img
+          src="{{ category.image.url }}"
+          alt="{{ category.get_type_display }}"
+        />
+        {% else %}
         <div class="image-placeholder"></div>
-      {% endif %}
-      <p>{{ category.get_type_display }}</p> 
-    </a>
-  {% endfor %}
-  </section>
+        {% endif %}
+        <p>{{ category.get_type_display }}</p>
+      </a>
+      {% endfor %}
+    </section>
 
-  <!-- Footer Section -->
-  <footer class="footer">
-    <div class="footer-container">
-      <div class="footer-section">
-        <h3>Follow us on our Social Media</h3>
-        <div class="social-icons">
-          <a href="#"><i class="fab fa-facebook-f"></i></a>
-          <a href="#"><i class="fab fa-instagram"></i></a>
+    <!-- Footer Section -->
+    <footer class="footer">
+      <div class="footer-container">
+        <div class="footer-section">
+          <h3>Follow us on our Social Media</h3>
+          <div class="social-icons">
+            <a href="#"><i class="fab fa-facebook-f"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+          </div>
+        </div>
+        <div class="footer-section">
+          <h3>Quick Links</h3>
+          <ul>
+            <li><a href="/aboutus/">About Us</a></li>
+            <li><a href="/contactinformation/">Contact Us</a></li>
+            <li><a href="#">Bulk Purchase</a></li>
+            <li><a href="#">Return & Replacement</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+          </ul>
+        </div>
+        <div class="footer-section about">
+          <h3>About the shop</h3>
+          <p>Sample description about the bookstore.</p>
+          <img
+            src="{% static 'images/logo.png' %}"
+            alt="Shop Logo"
+            class="footer-logo"
+          />
         </div>
       </div>
-      <div class="footer-section">
-        <h3>Quick Links</h3>
-        <ul>
-          <li><a href="/aboutus/">About Us</a></li>
-          <li><a href="/contactinformation/">Contact Us</a></li>
-          <li><a href="#">Bulk Purchase</a></li>
-          <li><a href="#">Return & Replacement</a></li>
-          <li><a href="#">Privacy Policy</a></li>
-        </ul>
+      <div class="footer-bottom">
+        <p>© 2025, Family Book Store</p>
+        <div class="payment-icons">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png"
+            alt="Visa"
+          />
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/0/04/Mastercard-logo.png"
+            alt="MasterCard"
+          />
+        </div>
       </div>
-      <div class="footer-section about">
-        <h3>About the shop</h3>
-        <p>Sample description about the bookstore.</p>
-        <img src="{% static 'images/logo.png' %}" alt="Shop Logo" class="footer-logo">
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>© 2025, Family Book Store</p>
-      <div class="payment-icons">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png" alt="Visa">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Mastercard-logo.png" alt="MasterCard">
-      </div>
-    </div>
-  </footer>
+    </footer>
 
-  <script src="{% static 'js/script.js' %}"></script>
-  <script src="{% static 'js/cart.js' %}"></script>
-</body>
+    <script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'js/cart.js' %}"></script>
+  </body>
 </html>
