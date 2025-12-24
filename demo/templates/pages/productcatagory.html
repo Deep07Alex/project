@@ -10,6 +10,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
     />
     <link rel="stylesheet" href="{% static 'css/productcatagory.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
   </head>
   <body>
     <!-- Cart Sidebar -->
@@ -36,9 +37,13 @@
       </div>
     </div>
 
-    <!-- Header Navbar -->
+    <!-- Header -->
     <header>
-      <div class="navbar">
+      <nav class="navbar">
+        <!-- Hamburger Menu -->
+        <div class="hamburger" id="hamburger">
+          <i class="fa fa-bars"></i>
+        </div>
         <div class="nav-logo">
           <div class="logo"></div>
         </div>
@@ -53,6 +58,18 @@
           <a href="#">Privacy Policy</a> {% endcomment %}
         </div>
         <div class="nav-icons">
+          <div class="search-container">
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Search books..."
+              id="searchInput"
+            />
+            <div class="search-btn" id="searchBtn">
+              <i class="fa fa-search"></i>
+            </div>
+            <div id="searchDropdown" class="search-dropdown"></div>
+          </div>
           <div class="cart-icon-container" id="cartIcon">
             <i class="fa fa-shopping-cart"></i>
             <span class="cart-count" id="cartCountBadge" style="display: none"
@@ -60,7 +77,7 @@
             >
           </div>
         </div>
-      </div>
+      </nav>
     </header>
 
     <!-- Collections Section -->
@@ -129,6 +146,22 @@
         </div>
       </div>
     </footer>
+
+    <!-- Right-Side Slider -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h3>Menu</h3>
+        <span class="close-sidebar" id="closeSidebar">&times;</span>
+      </div>
+      <ul class="sidebar-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/productcatagory/">Product Categories</a></li>
+        <li><a href="/bulkpurchase/">Bulk Purchase</a></li>
+        <li><a href="/aboutus/">About Us</a></li>
+        <li><a href="/return/">Return & Replacement</a></li>
+        <li><a href="/contactinformation/">Contact Us</a></li>
+      </ul>
+    </div>
 
     <script src="{% static 'js/script.js' %}"></script>
     <script src="{% static 'js/cart.js' %}"></script>
