@@ -6,22 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Family BookStore</title>
     <link rel="stylesheet" href="{%static 'css/contactinformation.css'%}" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
     />
   </head>
   <body>
+    <!-- Header -->
     <header>
-      <div class="navbar">
-        <!-- Logo -->
+      <nav class="navbar">
+        <!-- Hamburger Menu -->
+        <div class="hamburger" id="hamburger">
+          <i class="fa fa-bars"></i>
+        </div>
         <div class="nav-logo">
           <div class="logo"></div>
         </div>
-
-        <!-- Navigation Links -->
         <div class="nav-links">
-          <a href="#" class="active">Home</a>
+          <a href="#" class="active" id="homeLink">Home</a>
           <a href="#">Product Categories</a>
           <a href="#">Bulk Purchase</a>
           <a href="#">About Us</a>
@@ -30,13 +34,27 @@
           {% comment %} <a href="#">Terms & Conditions</a>
           <a href="#">Privacy Policy</a> {% endcomment %}
         </div>
-
-        <!-- Icons -->
         <div class="nav-icons">
-          <i class="fa fa-search"></i>
-          <i class="fa fa-bag-shopping"></i>
+          <div class="search-container">
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Search books..."
+              id="searchInput"
+            />
+            <div class="search-btn" id="searchBtn">
+              <i class="fa fa-search"></i>
+            </div>
+            <div id="searchDropdown" class="search-dropdown"></div>
+          </div>
+          <div class="cart-icon-container" id="cartIcon">
+            <i class="fa fa-shopping-cart"></i>
+            <span class="cart-count" id="cartCountBadge" style="display: none"
+              >0</span
+            >
+          </div>
         </div>
-      </div>
+      </nav>
     </header>
 
     <main>
@@ -100,6 +118,22 @@
         </div>
       </div>
     </footer>
+
+    <!-- Right-Side Slider -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h3>Menu</h3>
+        <span class="close-sidebar" id="closeSidebar">&times;</span>
+      </div>
+      <ul class="sidebar-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/productcatagory/">Product Categories</a></li>
+        <li><a href="/bulkpurchase/">Bulk Purchase</a></li>
+        <li><a href="/aboutus/">About Us</a></li>
+        <li><a href="/return/">Return & Replacement</a></li>
+        <li><a href="/contactinformation/">Contact Us</a></li>
+      </ul>
+    </div>
 
     <script src="{%static 'js/script.js'%}"></script>
   </body>
