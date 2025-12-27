@@ -69,7 +69,10 @@
           </div>
           <div class="cart-icon-container" id="cartIcon">
             <i class="fa fa-shopping-cart"></i>
-            <span class="cart-count" id="cartCountBadgeNav" style="display: none"
+            <span
+              class="cart-count"
+              id="cartCountBadgeNav"
+              style="display: none"
               >0</span
             >
           </div>
@@ -333,6 +336,12 @@
             <div>Shipping</div>
             <div>₹ {{ shipping|floatformat:2 }}</div>
           </div>
+          {% if addon_total > 0 %}
+          <div class="flex justify-between text-gray-500 text-sm sm:text-base">
+            <div>Add-ons</div>
+            <div>₹ {{ addon_total|floatformat:2 }}</div>
+          </div>
+          {% endif %}
           <div class="border-t border-gray-200 my-2"></div>
           <div class="flex justify-between font-semibold text-lg sm:text-xl">
             <div>Total</div>
@@ -440,4 +449,3 @@
     <script src="{% static 'js/payment.js' %}"></script>
   </body>
 </html>
-

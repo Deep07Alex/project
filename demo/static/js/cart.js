@@ -3,6 +3,7 @@ class CartManager {
         this.cartCountEl = document.getElementById('cartCount');
         this.cartSidebar = document.getElementById('cartSidebar');
         this.cartOverlay = document.getElementById('cartOverlay');
+        this.addonTotal = 0; // Track addon total
         this.init();
     }
     
@@ -87,6 +88,7 @@ class CartManager {
                 }
             }
             
+            this.addonTotal = data.addon_total || 0;
             this.renderCartItems(data.items || [], data.total || 0);
         } catch (error) {
             console.error('Display error:', error);
@@ -102,6 +104,7 @@ class CartManager {
         if (items.length === 0) {
             container.innerHTML = '<p class="empty-cart">Your cart is empty</p>';
             if (footer) footer.style.display = 'none';
+            this.addonTotal = 0;
             return;
         }
         
@@ -124,9 +127,84 @@ class CartManager {
             </div>
         `).join('');
         
+        // Add-ons section
+        const addonsContainer = document.createElement('div');
+        addonsContainer.className = 'cart-addons';
+        addonsContainer.innerHTML = `
+          <h4 style="margin: 15px 0 10px; font-size: 14px; font-weight: 600;">Add-ons</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+              <input type="checkbox" class="addon-checkbox" data-addon="highlighter" data-price="15">
+              <span>Highlighter (₹15)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+              <input type="checkbox" class="addon-checkbox" data-addon="bookmark" data-price="10">
+              <span>Bookmark (₹10)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+              <input type="checkbox" class="addon-checkbox" data-addon="packing" data-price="20">
+              <span>Packing (₹20)</span>
+            </label>
+          </div>
+        `;
+        container.appendChild(addonsContainer);
+        
+        // Load saved add-ons and attach event listeners
+        this.loadAddons();
+        
         if (footer) {
             footer.style.display = 'block';
             document.getElementById('cartTotal').textContent = `₹${total.toFixed(2)}`;
+        }
+    }
+    
+    async loadAddons() {
+        try {
+            const response = await fetch('/cart/addons/get/');
+            const data = await response.json();
+            
+            // Set checkbox states
+            document.querySelectorAll('.addon-checkbox').forEach(checkbox => {
+                const addon = checkbox.dataset.addon;
+                checkbox.checked = data.addons[addon] || false;
+                checkbox.addEventListener('change', () => this.updateAddons());
+            });
+            
+            // Store current addon total
+            this.addonTotal = data.addon_total || 0;
+            
+        } catch (error) {
+            console.error('Load addons error:', error);
+        }
+    }
+    
+    async updateAddons() {
+        try {
+            // Collect addon states
+            const addons = {};
+            document.querySelectorAll('.addon-checkbox').forEach(checkbox => {
+                addons[checkbox.dataset.addon] = checkbox.checked;
+            });
+            
+            // Save to session
+            const response = await fetch('/cart/addons/update/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                body: JSON.stringify({ addons })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.addonTotal = data.addon_total;
+                this.updateCartDisplay(); // Refresh totals
+            }
+            
+        } catch (error) {
+            console.error('Update addons error:', error);
         }
     }
     
@@ -164,4 +242,3 @@ class CartManager {
 }
 
 const cartManager = new CartManager();
-

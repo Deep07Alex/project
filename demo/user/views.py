@@ -162,6 +162,7 @@ def initiate_payu_payment(request):
         
         data = json.loads(request.body)
         cart = request.session.get('cart', {})
+        addons = request.session.get('cart_addons', {})
         
         if not cart:
             return JsonResponse({'success': False, 'error': 'Cart is empty'})
@@ -173,8 +174,13 @@ def initiate_payu_payment(request):
         
         # Calculate totals
         subtotal = sum(float(item['price']) * item['quantity'] for item in cart.values())
+        
+        # Calculate addon total
+        addon_prices = {'highlighter': 15, 'bookmark': 10, 'packing': 20}
+        addon_total = sum(addon_prices.get(key, 0) for key, selected in addons.items() if selected)
+        
         shipping = 49.00
-        total = subtotal + shipping
+        total = subtotal + shipping + addon_total
         
         # Create order
         order = Order.objects.create(
@@ -193,7 +199,7 @@ def initiate_payu_payment(request):
             status='pending'
         )
         
-        # Create order items
+        # Create order items for products
         for key, item in cart.items():
             OrderItem.objects.create(
                 order=order,
@@ -205,6 +211,21 @@ def initiate_payu_payment(request):
                 image_url=item.get('image', '')
             )
         
+        # Create order items for add-ons
+        addon_names = {'highlighter': 'Highlighter', 'bookmark': 'Bookmark', 'packing': 'Packing'}
+        for addon_key, selected in addons.items():
+            if selected:
+                OrderItem.objects.create(
+                    order=order,
+                    item_type='addon',
+                    item_id=0,
+                    title=addon_names[addon_key],
+                    price=addon_prices[addon_key],
+                    quantity=1,
+                    image_url=''
+                )
+        
+        # ... rest of the function continues as before ...
         # CRITICAL: Clean phone number
         phone = verification.phone_number
         phone = phone.replace('+91', '').replace(' ', '').strip()
@@ -218,10 +239,10 @@ def initiate_payu_payment(request):
         payu_params = {
             'key': settings.PAYU_MERCHANT_KEY,
             'txnid': txnid,
-            'amount': f"{total:.2f}",  # Ensure 2 decimal places
+            'amount': f"{total:.2f}",  # This now includes addons
             'productinfo': product_info,
-            'firstname': order.full_name.split()[0][:50],  # Max 50 chars
-            'email': order.email[:50],  # Max 50 chars
+            'firstname': order.full_name.split()[0][:50],
+            'email': order.email[:50],
             'phone': phone,
             'surl': request.build_absolute_uri('/payment/success/'),
             'furl': request.build_absolute_uri('/payment/failure/'),
@@ -234,11 +255,6 @@ def initiate_payu_payment(request):
         
         # Generate hash
         payu_params['hash'] = generate_payu_hash(payu_params)
-        
-        # LOG EVERYTHING
-        logger.error("=== PAYU REQUEST PARAMETERS ===")
-        for key, value in payu_params.items():
-            logger.error(f"{key}: {value} (type: {type(value)})")
         
         request.session['payu_txnid'] = txnid
         

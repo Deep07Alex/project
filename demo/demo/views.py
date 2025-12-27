@@ -120,15 +120,57 @@ def add_to_cart(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
+@require_POST
+def update_cart_addons(request):
+    """Update cart add-ons selection"""
+    try:
+        data = json.loads(request.body)
+        addons = data.get('addons', {})
+        request.session['cart_addons'] = addons
+        request.session.modified = True
+        
+        # Calculate addon total
+        addon_prices = {'highlighter': 15, 'bookmark': 10, 'packing': 20}
+        addon_total = sum(addon_prices.get(key, 0) for key, selected in addons.items() if selected)
+        
+        return JsonResponse({
+            'success': True,
+            'addon_total': addon_total
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+def get_cart_addons(request):
+    """Get cart add-ons and their total"""
+    addons = request.session.get('cart_addons', {})
+    addon_prices = {'highlighter': 15, 'bookmark': 10, 'packing': 20}
+    addon_total = sum(addon_prices.get(key, 0) for key, selected in addons.items() if selected)
+    
+    return JsonResponse({
+        'addons': addons,
+        'addon_total': addon_total
+    })
+
+# THE CORRECT VERSION WITH ADDON SUPPORT
 def get_cart_items(request):
     """Get cart items for display"""
     cart = get_cart(request)
     items = list(cart.values())
+    
+    # Calculate addon total
+    addons = request.session.get('cart_addons', {})
+    addon_prices = {'highlighter': 15, 'bookmark': 10, 'packing': 20}
+    addon_total = sum(addon_prices.get(key, 0) for key, selected in addons.items() if selected)
+    
+    product_total = sum(float(item['price']) * item['quantity'] for item in cart.values())
+    total = product_total + addon_total
+    
     return JsonResponse({
         'cart_count': sum(item['quantity'] for item in cart.values()),
         'items': items,
-        'total': sum(float(item['price']) * item['quantity'] for item in cart.values())  
-    })  
+        'addon_total': addon_total,
+        'total': total
+    })
 
 @require_POST
 def remove_from_cart(request):
@@ -189,23 +231,26 @@ def search(request):
         'query': query,
         'results': results
     })
-    
-def checkout(request):
 
-    cart = get_cart(request)    
-    
-    # Convert cart dict values to list for template iteration
+# THE CORRECT VERSION WITH ADDON SUPPORT
+def checkout(request):
+    cart = get_cart(request)
     cart_items = list(cart.values())
     
-    # Calculate totals
+    # Calculate product subtotal
     subtotal = sum(float(item['price']) * item['quantity'] for item in cart_items)
-    shipping = 49.00  # Flat rate shipping
-    total = subtotal + shipping
+    
+    # Calculate addon total from session
+    addons = request.session.get('cart_addons', {})
+    addon_prices = {'highlighter': 15, 'bookmark': 10, 'packing': 20}
+    addon_total = sum(addon_prices.get(key, 0) for key, selected in addons.items() if selected)
+    
+    shipping = 49.00
+    total = subtotal + shipping + addon_total
     
     # Add initials for placeholder images if image is missing
     for item in cart_items:
         if not item.get('image'):
-            # Create initials from first letters of first two words
             words = item['title'].split()
             item['initials'] = ''.join([word[0].upper() for word in words[:2]])
     
@@ -213,7 +258,9 @@ def checkout(request):
         'cart_items': cart_items,
         'subtotal': subtotal,
         'shipping': shipping,
+        'addon_total': addon_total,
         'total': total,
+        'addons': addons,
     }
     
     return render(request, 'pages/payment.html', context)
