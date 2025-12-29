@@ -694,49 +694,161 @@ body {
 }
 
 /* ---------- MOBILE (Horizontal Scroll – Modern UX) ---------- */
+
+/* ==================================================
+   MOBILE RESPONSIVE - SINGLE CONSOLIDATED BLOCK
+   ================================================== */
+
 @media (max-width: 768px) {
-  .book-categories {
-    display: flex;
-    gap: 16px;
-    padding: 30px 10px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
+  /* ===== NAVBAR FIXES - Move icons left ===== */
+  .hamburger {
+    display: block;
   }
 
-  .book-categories::-webkit-scrollbar {
+  .nav-links {
     display: none;
   }
 
-  .category {
-    min-width: 90px;
-    scroll-snap-align: start;
+  /* Move icons slightly left */
+  .nav-icons {
+    gap: 12px; /* Reduced from 18px */
+    padding-right: 10px; /* Add right padding to shift left */
   }
 
-  .category img {
-    width: 75px;
-    height: 75px;
-    padding: 8px;
+  .search-container {
+    max-width: calc(100% - 40px); /* Reduce width to create left space */
+    margin: 0; /* Remove auto centering */
+    padding: 0 10px; /* Balanced padding */
   }
 
-  .category p {
-    font-size: 11px;
-    max-width: 90px;
+  .search-input {
+    height: 48px;
+    font-size: 16px;
+    padding: 12px 45px 12px 16px;
+  }
+
+  /* ===== BOOK GRID FIXES - Show 2 books per row ===== */
+  .book-grid {
+    display: grid !important; /* Force grid layout */
+    grid-template-columns: repeat(2, 1fr) !important; /* 2 books per row */
+    gap: 15px !important;
+    padding: 0 15px 30px !important; /* Balanced padding */
+    overflow-x: visible !important; /* Remove horizontal scroll */
+    overflow-y: visible !important;
+    scroll-snap-type: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background-color: white;
+    border-radius: 0;
+    border: none;
+  }
+
+  .book-card {
+    min-width: auto !important; /* Remove constraints */
+    max-width: none !important;
+    width: 100% !important;
+    min-height: auto !important;
+    scroll-snap-align: none !important;
+    padding: 12px !important;
+    margin: 0 !important;
+  }
+
+  /* Book card content sizing */
+  .book-card img {
+    height: 160px !important; /* Taller images */
+    object-fit: cover;
+    border-radius: 4px !important;
+  }
+
+  .book-card .book-title {
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+    margin: 8px 0 !important;
+    height: auto !important;
+    min-height: 30px;
+  }
+
+  .book-card .price {
+    font-size: 13px !important;
+    margin: 5px 0 !important;
+    font-weight: 600;
+  }
+
+  .book-card .price .old {
+    font-size: 11px !important;
+  }
+
+  .book-card .cart-btn {
+    font-size: 12px !important;
+    padding: 8px !important;
+    border-radius: 4px !important;
+  }
+
+  /* Sale tag */
+  .book-card .sale-tag {
+    font-size: 9px !important;
+    padding: 3px 6px !important;
+    top: 8px !important;
+    left: 8px !important;
+  }
+
+  /* Section titles */
+  .section-title {
+    font-size: 18px !important;
+    margin-bottom: 20px !important;
+    padding-left: 15px !important;
+    text-align: left;
+  }
+
+  /* Remove pagination dots (not needed for grid) */
+  .pagination-dots {
+    display: none !important;
+  }
+
+  /* ===== SEARCH DROPDOWN ===== */
+  .search-dropdown {
+    left: 0;
+    right: 0;
+    border-radius: 0;
+    max-height: 70vh;
+  }
+
+  .search-item {
+    padding: 14px 16px;
+  }
+
+  /* ===== FOOTER ===== */
+  .footer-container {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
   }
 }
 
-/* ---------- SMALL PHONES ---------- */
-@media (max-width: 375px) {
-  .category img {
-    width: 65px;
-    height: 65px;
+/* ===== SMALL PHONES (under 480px) - Show 1 book per row ===== */
+@media (max-width: 480px) {
+  .book-grid {
+    grid-template-columns: 1fr !important; /* 1 book per row */
+    gap: 10px !important;
+    padding: 0 10px 25px !important;
   }
 
-  .category p {
-    font-size: 10px;
+  .book-card img {
+    height: 140px !important;
+  }
+
+  /* Further adjust navbar for very small screens */
+  .nav-icons {
+    gap: 10px;
+    padding-right: 5px;
+  }
+
+  .search-container {
+    max-width: calc(100% - 30px);
+    padding: 0 5px;
   }
 }
+
 
 
 
@@ -1252,88 +1364,7 @@ body {
     }
 }
 
-/* Mobile & Tablet */
-@media (max-width: 768px) {
-    .nav-links {
-        display: none;
-    }
 
-    .search-container {
-        max-width: 100%;
-        padding: 0 16px;
-    }
-
-    .search-input {
-        height: 48px;
-        font-size: 16px;
-        padding: 12px 45px 12px 16px;
-    }
-
-    .search-dropdown {
-        left: -16px;
-        right: -16px;
-        border-radius: 0;
-        max-height: 70vh;
-    }
-
-    .search-item {
-        padding: 14px 16px;
-    }
-
-    .search-item img {
-        width: 55px;
-        height: 55px;
-    }
-
-    .search-item-title {
-        font-size: 15px;
-    }
-
-    .search-item-price {
-        font-size: 14px;
-    }
-
-    .search-categories {
-        padding: 10px 16px;
-    }
-
-    .search-category-tab {
-        padding: 6px 12px;
-        font-size: 12px;
-    }
-
-    .book-grid {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .book-card {
-        width: 90%;
-    }
-
-    .footer-container {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-}
-
-@media (max-width: 480px) {
-    .search-input {
-        height: 44px;
-        font-size: 15px;
-    }
-
-    .search-btn {
-        width: 32px;
-        height: 32px;
-        right: 6px;
-    }
-
-    .clear-search {
-        right: 44px;
-    }
-}
 
 /* ---------- 12. Scrollbar Styling ---------- */
 .search-dropdown::-webkit-scrollbar {

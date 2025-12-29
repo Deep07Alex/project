@@ -1,75 +1,86 @@
 // ============================================
-// Hero Section Slider (FIXED - Wrapped in IIFE)
+// Hero Section Slider (FIXED - Add null checks)
 // ============================================
-let currentSlide = 0;
-const slides       = document.getElementById("slides");
-const dotsContainer= document.getElementById("pagination");
-const totalSlides  = document.querySelectorAll(".slide").length;
+const slides = document.getElementById("slides");
+const dotsContainer = document.getElementById("pagination");
 
-let sliderInterval;
+// Only run if hero slider exists on the page
+if (slides && dotsContainer) {
+    let currentSlide = 0;
+    const totalSlides = document.querySelectorAll(".slide").length;
+    let sliderInterval;
 
-/* create dots */
-dotsContainer.innerHTML = "";
-for(let i=0;i<totalSlides;i++){
-  const dot = document.createElement("div");
-  dot.className = "dot" + (i===0 ? " active" : "");
-  dot.onclick   = () => goToSlide(i);
-  dotsContainer.appendChild(dot);
-}
+    /* create dots */
+    dotsContainer.innerHTML = "";
+    for(let i = 0; i < totalSlides; i++) {
+        const dot = document.createElement("div");
+        dot.className = "dot" + (i === 0 ? " active" : "");
+        dot.onclick = () => goToSlide(i);
+        dotsContainer.appendChild(dot);
+    }
 
-function updateSlider(){
-  slides.style.transform = `translateX(-${currentSlide*100}%)`;
-  document.querySelectorAll(".dot").forEach((d,i)=>d.classList.toggle("active", i===currentSlide));
-}
-function nextSlide(){
-  currentSlide = (currentSlide+1) % totalSlides;
-  updateSlider();
-}
-function prevSlide(){
-  currentSlide = (currentSlide-1+totalSlides) % totalSlides;
-  updateSlider();
-}
-function goToSlide(index){
-  currentSlide = index;
-  updateSlider();
-  restartAutoSlide();
-}
-function startAutoSlide(){
-  clearInterval(sliderInterval);
-  sliderInterval = setInterval(nextSlide,4000);
-}
-function restartAutoSlide(){
-  startAutoSlide();
-}
+    function updateSlider() {
+        slides.style.transform = `translateX(-${currentSlide * 100}%)`;
+        document.querySelectorAll(".dot").forEach((d, i) => d.classList.toggle("active", i === currentSlide));
+    }
 
-/* init */
-startAutoSlide();
-window.nextSlide = nextSlide;
-window.prevSlide = prevSlide;
+    function nextSlide() {
+        currentSlide = (currentSlide + 1) % totalSlides;
+        updateSlider();
+    }
+
+    function prevSlide() {
+        currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+        updateSlider();
+    }
+
+    function goToSlide(index) {
+        currentSlide = index;
+        updateSlider();
+        restartAutoSlide();
+    }
+
+    function startAutoSlide() {
+        clearInterval(sliderInterval);
+        sliderInterval = setInterval(nextSlide, 4000);
+    }
+
+    function restartAutoSlide() {
+        startAutoSlide();
+    }
+
+    /* init */
+    startAutoSlide();
+    window.nextSlide = nextSlide;
+    window.prevSlide = prevSlide;
+}
 
 // ============================================
 // Advertisement Slider (FIXED - Add null check)
 // ============================================
 let adIndex = 0;
 const adSlides = document.getElementById("adSlides");
-const totalAds = adSlides.children.length;
 
-function updateAd() {
-  adSlides.style.transform = `translateX(-${adIndex * 100}%)`;
+if (adSlides) {
+    const totalAds = adSlides.children.length;
+
+    function updateAd() {
+        adSlides.style.transform = `translateX(-${adIndex * 100}%)`;
+    }
+
+    function nextAd() {
+        adIndex = (adIndex + 1) % totalAds;
+        updateAd();
+    }
+
+    function prevAd() {
+        adIndex = (adIndex - 1 + totalAds) % totalAds;
+        updateAd();
+    }
+
+    /* Auto Slide */
+    setInterval(nextAd, 3000);
 }
-
-function nextAd() {
-  adIndex = (adIndex + 1) % totalAds;
-  updateAd();
-}
-
-function prevAd() {
-  adIndex = (adIndex - 1 + totalAds) % totalAds;
-  updateAd();
-}
-
-/* Auto Slide */
-setInterval(nextAd, 3000);
 
 // ============================================
 // Live Search with Dropdown (FIXED - Add null checks & debugging)
