@@ -1,418 +1,536 @@
-// Client-side redirect for empty cart on checkout page
-(function checkoutCartCheck() {
-  // Only run on checkout page
-  if (window.location.pathname !== '/checkout/') return;
-  
-  // Check cart status immediately
-  fetch('/cart/items/')
-    .then(response => {
-      if (!response.ok) throw new Error('Network error');
-      return response.json();
-    })
-    .then(data => {
-      if (!data.cart_count || data.cart_count === 0) {
-        // Cart is empty, redirect to home
-        window.location.href = '/';
-      }
-    })
-    .catch(error => {
-      console.error('Cart check failed:', error);
-      // On error, also redirect to be safe
-      window.location.href = '/';
-    });
+// ============================================
+// Hero Section Slider (FIXED - Wrapped in IIFE)
+// ============================================
+(function() {
+    const slides = document.getElementById("slides");
+    const pagination = document.getElementById("pagination");
+    
+    // Exit if elements don't exist (not on homepage)
+    if (!slides || !pagination) return;
+    
+    // Local scoped variable to avoid conflicts
+    let currentSlideIndex = 0;
+    const totalSlides = 4;
+    
+    // Create dots
+    for (let i = 0; i < totalSlides; i++) {
+        const dot = document.createElement("div");
+        dot.className = "dot" + (i === 0 ? " active" : "");
+        dot.onclick = () => goToSlide(i);
+        pagination.appendChild(dot);
+    }
+    
+    function updateSlider() {
+        slides.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
+        document.querySelectorAll(".dot").forEach((d, i) =>
+            d.classList.toggle("active", i === currentSlideIndex)
+        );
+    }
+    
+    function nextSlide() {
+        currentSlideIndex = (currentSlideIndex + 1) % totalSlides;
+        updateSlider();
+    }
+    
+    function prevSlide() {
+        currentSlideIndex = (currentSlideIndex - 1 + totalSlides) % totalSlides;
+        updateSlider();
+    }
+    
+    function goToSlide(i) {
+        currentSlideIndex = i;
+        updateSlider();
+    }
+    
+    // Auto slide
+    setInterval(nextSlide, 4000);
+    window.nextSlide = nextSlide; // Keep for arrow buttons
+    window.prevSlide = prevSlide;
+    window.goToSlide = goToSlide;
 })();
 
-// ---------------- Live Search with Dropdown ----------------
+// ============================================
+// Advertisement Slider (FIXED - Add null check)
+// ============================================
+(function() {
+    const adSlides = document.getElementById("adSlides");
+    if (!adSlides) return;
+    
+    let adIndex = 0;
+    const totalAdSlides = 3;
+    
+    window.nextAd = function() {
+        adIndex = (adIndex + 1) % totalAdSlides;
+        adSlides.style.transform = `translateX(-${adIndex * 100}%)`;
+    };
+    
+    window.prevAd = function() {
+        adIndex = (adIndex - 1 + totalAdSlides) % totalAdSlides;
+        adSlides.style.transform = `translateX(-${adIndex * 100}%)`;
+    };
+})();
+
+// ============================================
+// Live Search with Dropdown (FIXED - Add null checks & debugging)
+// ============================================
 document.addEventListener("DOMContentLoaded", function () {
-  const searchInput = document.getElementById("searchInput");
-  const searchBtn = document.getElementById("searchBtn");
-  const dropdown = document.getElementById("searchDropdown");
-  
-  if (!searchInput || !dropdown) return;
-  
-  let debounceTimer;
-  let currentQuery = "";
-  
-  // Toggle search bar
-  searchBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    searchInput.classList.toggle("active");
-    if (searchInput.classList.contains("active")) {
-      searchInput.focus();
-      dropdown.style.display = "block";
-    } else {
-      dropdown.style.display = "none";
-    }
-  });
-  
-  // Hide dropdown when clicking outside
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".search-container")) {
-      dropdown.style.display = "none";
-      searchInput.classList.remove("active");
-    }
-  });
-  
-  // Live search input
-  searchInput.addEventListener("input", function() {
-    clearTimeout(debounceTimer);
-    currentQuery = this.value.trim();
+    const searchInput = document.getElementById("searchInput");
+    const searchBtn = document.getElementById("searchBtn");
+    const dropdown = document.getElementById("searchDropdown");
     
-    if (currentQuery.length < 2) {
-      dropdown.style.display = "none";
-      return;
+    console.log('Search: Elements found:', { searchInput, searchBtn, dropdown });
+    
+    // Exit if elements don't exist
+    if (!searchInput || !dropdown) {
+        console.log('Search: Elements missing, exiting');
+        return;
     }
     
-    // Show loading
-    dropdown.innerHTML = '<div class="search-item loading">Searching...</div>';
-    dropdown.style.display = "block";
+    console.log('Search: Initializing...');
     
-    debounceTimer = setTimeout(() => {
-      fetch(`/search/suggestions/?q=${encodeURIComponent(currentQuery)}`)
-        .then(response => response.json())
-        .then(data => {
-          renderDropdownResults(data.results, currentQuery);
-        })
-        .catch(error => {
-          dropdown.style.display = "none";
-          console.error("Search error:", error);
+    let debounceTimer;
+    let currentQuery = "";
+    
+    // Toggle search bar
+    searchBtn?.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        searchInput.classList.toggle("active");
+        dropdown.style.display = searchInput.classList.contains("active") ? "block" : "none";
+        console.log('Search: Toggle clicked, active:', searchInput.classList.contains("active"));
+    });
+    
+    // Hide dropdown when clicking outside
+    document.addEventListener("click", (e) => {
+        if (!e.target.closest(".search-container")) {
+            dropdown.style.display = "none";
+            searchInput.classList.remove("active");
+        }
+    });
+    
+    // Live search input
+    searchInput.addEventListener("input", function() {
+        clearTimeout(debounceTimer);
+        currentQuery = this.value.trim();
+        console.log('Search: Input changed:', currentQuery);
+        
+        if (currentQuery.length < 2) {
+            dropdown.style.display = "none";
+            return;
+        }
+        
+        dropdown.innerHTML = '<div class="search-item loading">Searching...</div>';
+        dropdown.style.display = "block";
+        
+        debounceTimer = setTimeout(() => {
+            console.log('Search: Fetching results for:', currentQuery);
+            fetch(`/search/suggestions/?q=${encodeURIComponent(currentQuery)}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Search: Results received:', data);
+                    renderDropdownResults(data.results, currentQuery);
+                })
+                .catch(error => {
+                    dropdown.style.display = "none";
+                    console.error("Search error:", error);
+                });
+        }, 250);
+    });
+    
+    function renderDropdownResults(results, query) {
+        dropdown.innerHTML = "";
+        
+        if (results.length === 0) {
+            dropdown.innerHTML = `
+                <div class="search-item no-results">
+                    <i class="fas fa-search" style="font-size: 24px; margin-bottom: 10px; color: #ddd;"></i>
+                    <div>No books found for "${query}"</div>
+                </div>
+            `;
+            dropdown.style.display = "block";
+            return;
+        }
+        
+        results.forEach(item => {
+            const resultDiv = document.createElement("div");
+            resultDiv.className = "search-item";
+            
+            const escapeHtml = (text) => {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            };
+            
+            const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            const safeTitle = escapeHtml(item.title);
+            const highlightedTitle = safeTitle.replace(regex, '<strong>$1</strong>');
+            
+            resultDiv.innerHTML = `
+                <img src="${item.image}" alt="" onerror="this.src='/static/images/placeholder.png'; this.onerror=null;">
+                <div class="search-item-info">
+                    <div class="cart-item-title">${highlightedTitle}</div>
+                    <div class="cart-item-price">Rs. ${escapeHtml(item.price)}</div>
+                    <div class="cart-item-type">${item.type}</div>
+                </div>
+            `;
+            
+            resultDiv.addEventListener("click", () => {
+                window.location.href = item.url;
+            });
+            
+            dropdown.appendChild(resultDiv);
         });
-    }, 250);
-  });
-  
-  function renderDropdownResults(results, query) {
-    dropdown.innerHTML = "";
-    
-    if (results.length === 0) {
-      dropdown.innerHTML = `
-        <div class="search-item no-results">
-          <i class="fas fa-search" style="font-size: 24px; margin-bottom: 10px; color: #ddd;"></i>
-          <div>No books found for "${query}"</div>
-        </div>
-      `;
-      dropdown.style.display = "block";
-      return;
+        
+        dropdown.style.display = "block";
     }
     
-    results.forEach(item => {
-      const resultDiv = document.createElement("div");
-      resultDiv.className = "search-item";
-      
-      // Safe highlight
-      const escapeHtml = (text) => {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-      };
-      
-      const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-      const safeTitle = escapeHtml(item.title);
-      const highlightedTitle = safeTitle.replace(regex, '<strong>$1</strong>');
-      
-      resultDiv.innerHTML = `
-        <img src="${item.image}" alt="" onerror="this.src='{% static 'images/placeholder.png' %}'; this.onerror=null;">
-        <div class="search-item-info">
-          <div class="cart-item-title">${highlightedTitle}</div>
-          <div class="cart-item-price">Rs. ${escapeHtml(item.price)}</div>
-          <div class="cart-item-type">${item.type}</div>
-        </div>
-      `;
-      
-      resultDiv.addEventListener("click", () => {
-        window.location.href = item.url;
-      });
-      
-      dropdown.appendChild(resultDiv);
+    console.log('Search: Fully initialized');
+});
+
+// ============================================
+// Header Navigation (FIXED - Add null checks)
+// ============================================
+document.addEventListener("DOMContentLoaded", function () {
+    const links = document.querySelectorAll(".nav-links a");
+    links.forEach(link => {
+        const text = link.textContent.trim();
+        if (!text) return;
+        
+        if (text === "Home") {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                window.location.href = "/";
+            });
+        } else if (text === "Product Categories") {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                window.location.href = "/productcatagory/";
+            });
+        } else if (text === "Bulk Purchase") {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                window.location.href = "/bulkpurchase/";
+            });
+        } else if (text === "About Us") {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                window.location.href = "/aboutus/";
+            });
+        } else if (text === "Return & Replacement") {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                window.location.href = "/return/";
+            });
+        } else if (text === "Contact Us") {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                window.location.href = "/contactinformation/";
+            });
+        } else if (text === "Privacy Policy") {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                window.location.href = "/privacy-policy/";
+            });
+        }
     });
-    
-    dropdown.style.display = "block";
-  }
-});
-// ---------------- Header Navigation ----------------
-document.addEventListener("DOMContentLoaded", function () {
-  const links = document.querySelectorAll(".nav-links a");
-  links.forEach(link => {
-    const text = link.textContent.trim();
-    if (text === "Home") {
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        window.location.href = "/";
-      });
-    } else if (text === "Product Categories") {
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        window.location.href = "/productcatagory/";
-      });
-    } else if (text === "Bulk Purchase") {
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        window.location.href = "/bulkpurchase/";
-      });
-    } else if (text === "About Us") {
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        window.location.href = "/aboutus/";
-      });
-    } else if (text === "Return & Replacement") {
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        window.location.href = "/return/";
-      });
-    } else if (text === "Contact Us") {
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        window.location.href = "/contactinformation/";
-      });
-      
-    } else if (text === "Privacy Policy") {
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        window.location.href = "/privacy-policy/";
-      });
-    } 
-  });
 });
 
-// ---------------- Footer Navigation ----------------
+// ============================================
+// Footer Navigation (FIXED - Add null checks)
+// ============================================
 document.addEventListener("DOMContentLoaded", function () {
-  const footerLinks = document.querySelectorAll(".footer-section ul li a");
-  footerLinks.forEach(link => {
-    const text = link.textContent.trim();
-    if (text === "About Us") {
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        window.location.href = "/aboutus/";
-      });
-    } else if (text === "Contact Us") {
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        window.location.href = "/contactinformation/";
-      });
-    } else if (text === "Bulk Purchase") {
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        window.location.href = "/bulkpurchase/";
-      });
-    } else if (text === "Return & Replacement") {
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        window.location.href = "/return/";
-      });
-    } else if (text === "Privacy Policy") {
-      link.addEventListener("click", function (e) {
-        e.preventDefault();
-        window.location.href = "/privacy-policy/";
-      });
-    }
-  });
-});
-
-// ---------------- View Buttons (REFACTORED) ----------------
-document.addEventListener("DOMContentLoaded", function () {
-  // Single handler for all view buttons using data attributes
-  document.querySelectorAll('.view-btn').forEach(button => {
-    button.addEventListener('click', function(e) {
-      e.preventDefault();
-      const category = this.getAttribute('data-category');
-      if (category) {
-        window.location.href = `/category/${category}/`;
-      }
+    const footerLinks = document.querySelectorAll(".footer-section ul li a");
+    footerLinks.forEach(link => {
+        const text = link.textContent.trim();
+        if (!text) return;
+        
+        if (text === "About Us") {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                window.location.href = "/aboutus/";
+            });
+        } else if (text === "Contact Us") {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                window.location.href = "/contactinformation/";
+            });
+        } else if (text === "Bulk Purchase") {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                window.location.href = "/bulkpurchase/";
+            });
+        } else if (text === "Return & Replacement") {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                window.location.href = "/return/";
+            });
+        } else if (text === "Privacy Policy") {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                window.location.href = "/privacy-policy/";
+            });
+        }
     });
-  });
 });
 
-// ---------------- Quantity Counter ----------------
+// ============================================
+// View Buttons (FIXED - Add null check)
+// ============================================
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll('.view-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const category = this.getAttribute('data-category');
+            if (category) {
+                window.location.href = `/category/${category}/`;
+            }
+        });
+    });
+});
+
+// ============================================
+// Quantity Counter (FIXED - Add null check)
+// ============================================
 document.addEventListener("DOMContentLoaded", () => {
-  const qtyDisplay = document.getElementById('qty');
-  const plus = document.getElementById('plus');
-  const minus = document.getElementById('minus');
-  if (!qtyDisplay || !plus || !minus) return;
-  
-  let quantity = 1;
-  plus.addEventListener('click', () => {
-    quantity++;
-    qtyDisplay.textContent = quantity;
-  });
-  minus.addEventListener('click', () => {
-    if (quantity > 1) {
-      quantity--;
-      qtyDisplay.textContent = quantity;
-    }
-  });
-});
-
-// ---------------- Pagination ----------------
-document.addEventListener("DOMContentLoaded", function () {
-  const pagination = document.querySelector(".pagination");
-  if (!pagination) return;
-
-  const prevBtn = pagination.querySelector(".prev");
-  const nextBtn = pagination.querySelector(".next");
-  const dots = pagination.querySelector(".dots");
-  const totalPages = 42;
-  let currentPage = 1;
-
-  function renderPagination() {
-    pagination.querySelectorAll(".page").forEach(p => p.remove());
-    const beforeDots = dots;
-    const pagesToShow = getPagesToShow(currentPage, totalPages);
-
-    pagesToShow.forEach(pageNum => {
-      const a = document.createElement("a");
-      a.href = "#";
-      a.textContent = pageNum;
-      a.classList.add("page");
-      if (pageNum === currentPage) a.classList.add("active");
-      beforeDots.before(a);
-    });
-
-    dots.style.display = pagesToShow.includes(totalPages) ? "none" : "inline";
-    prevBtn.classList.toggle("disabled", currentPage === 1);
-    nextBtn.classList.toggle("disabled", currentPage === totalPages);
-  }
-
-  function getPagesToShow(current, total) {
-    if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
-    if (current <= 3) return [1, 2, 3];
-    if (current >= total - 2) return [total - 2, total - 1, total];
-    return [current - 1, current, current + 1];
-  }
-
-  pagination.addEventListener("click", e => {
-    e.preventDefault();
-    if (e.target.classList.contains("page")) {
-      currentPage = parseInt(e.target.textContent);
-      renderPagination();
-    }
-    if (e.target.classList.contains("next") && currentPage < totalPages) {
-      currentPage++;
-      renderPagination();
-    }
-    if (e.target.classList.contains("prev") && currentPage > 1) {
-      currentPage--;
-      renderPagination();
-    }
-  });
-
-  renderPagination();
-});
-
-
-// Hamburger Sidebar Toggle
-document.addEventListener("DOMContentLoaded", function () {
-  const hamburger = document.getElementById("hamburger");
-  const sidebar = document.getElementById("sidebar");
-  const closeSidebar = document.getElementById("closeSidebar");
-
-  hamburger.addEventListener("click", () => {
-    sidebar.classList.add("active");
-  });
-
-  closeSidebar.addEventListener("click", () => {
-    sidebar.classList.remove("active");
-  });
-
-  // Close sidebar when clicking outside
-  document.addEventListener("click", (e) => {
-    if (!sidebar.contains(e.target) && !hamburger.contains(e.target)) {
-      sidebar.classList.remove("active");
-    }
-  });
-});
-
-// ============================================
-// Mobile Pagination Dots for Horizontal Scroll
-// ============================================
-document.addEventListener("DOMContentLoaded", function () {
-  // Only run on mobile
-  if (window.innerWidth > 768) return;
-
-  const bookSections = document.querySelectorAll('.book-sale');
-  
-  bookSections.forEach(section => {
-    const grid = section.querySelector('.book-grid');
-    const dotsContainer = section.querySelector('.pagination-dots');
-    if (!grid || !dotsContainer) return;
-
-    const cards = grid.querySelectorAll('.book-card');
-    const cardCount = cards.length;
+    const qtyDisplay = document.getElementById('qty-display');
+    const plus = document.getElementById('plus');
+    const minus = document.getElementById('minus');
     
-    // Generate dots
-    dotsContainer.innerHTML = '';
-    for (let i = 0; i < cardCount; i++) {
-      const dot = document.createElement('div');
-      dot.className = 'dot';
-      if (i === 0) dot.classList.add('active');
-      
-      // Click to scroll
-      dot.addEventListener('click', () => {
-        cards[i].scrollIntoView({ 
-          behavior: 'smooth', 
-          inline: 'start',
-          block: 'nearest'
-        });
-      });
-      
-      dotsContainer.appendChild(dot);
-    }
-
-    // Update dots on scroll
-    grid.addEventListener('scroll', () => {
-      const scrollLeft = grid.scrollLeft;
-      const cardWidth = cards[0].offsetWidth + 12; // includes gap
-      const activeIndex = Math.round(scrollLeft / cardWidth);
-      
-      dotsContainer.querySelectorAll('.dot').forEach((dot, idx) => {
-        dot.classList.toggle('active', idx === activeIndex);
-      });
+    if (!qtyDisplay || !plus || !minus) return;
+    
+    let quantity = 1;
+    plus.addEventListener('click', () => {
+        quantity++;
+        qtyDisplay.textContent = quantity;
     });
-  });
+    minus.addEventListener('click', () => {
+        if (quantity > 1) {
+            quantity--;
+            qtyDisplay.textContent = quantity;
+        }
+    });
 });
 
+// ============================================
+// Pagination (FIXED - Add null checks)
+// ============================================
+document.addEventListener("DOMContentLoaded", function () {
+    const pagination = document.querySelector(".pagination");
+    if (!pagination) return;
+    
+    const prevBtn = pagination.querySelector(".prev");
+    const nextBtn = pagination.querySelector(".next");
+    const dots = pagination.querySelector(".dots");
+    
+    if (!prevBtn || !nextBtn || !dots) return;
+    
+    const totalPages = 42;
+    let currentPage = 1;
+    
+    function renderPagination() {
+        if (!pagination) return;
+        
+        pagination.querySelectorAll(".page").forEach(p => p.remove?.());
+        const beforeDots = dots;
+        
+        const pagesToShow = getPagesToShow(currentPage, totalPages);
+        
+        pagesToShow.forEach(pageNum => {
+            const a = document.createElement("a");
+            a.href = "#";
+            a.textContent = pageNum;
+            a.classList.add("page");
+            if (pageNum === currentPage) a.classList.add("active");
+            beforeDots.before(a);
+        });
+        
+        dots.style.display = pagesToShow.includes(totalPages) ? "none" : "inline";
+        prevBtn.classList.toggle("disabled", currentPage === 1);
+        nextBtn.classList.toggle("disabled", currentPage === totalPages);
+    }
+    
+    function getPagesToShow(current, total) {
+        if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
+        if (current <= 3) return [1, 2, 3];
+        if (current >= total - 2) return [total - 2, total - 1, total];
+        return [current - 1, current, current + 1];
+    }
+    
+    pagination.addEventListener("click", e => {
+        e.preventDefault();
+        if (e.target.classList.contains("page")) {
+            currentPage = parseInt(e.target.textContent);
+            renderPagination();
+        }
+        if (e.target.classList.contains("next") && currentPage < totalPages) {
+            currentPage++;
+            renderPagination();
+        }
+        if (e.target.classList.contains("prev") && currentPage > 1) {
+            currentPage--;
+            renderPagination();
+        }
+    });
+    
+    renderPagination();
+});
 
-// hero section ..................
+// ============================================
+// Hamburger Sidebar Toggle (FIXED - Add null checks)
+// ============================================
+document.addEventListener("DOMContentLoaded", function () {
+    const hamburger = document.getElementById("hamburger");
+    const sidebar = document.getElementById("sidebar");
+    const closeSidebar = document.getElementById("closeSidebar");
+    
+    if (!hamburger || !sidebar || !closeSidebar) return;
+    
+    hamburger.addEventListener("click", () => {
+        sidebar.classList.add("active");
+    });
+    
+    closeSidebar.addEventListener("click", () => {
+        sidebar.classList.remove("active");
+    });
+    
+    document.addEventListener("click", (e) => {
+        if (!sidebar.contains(e.target) && !hamburger.contains(e.target)) {
+            sidebar.classList.remove("active");
+        }
+    });
+});
 
-//bar slider
-let index = 0;
-const slides = document.getElementById("slides");
-const totalSlides = 4;
-const pagination = document.getElementById("pagination");
+// ============================================
+// Mobile Pagination Dots (FIXED - Add null checks)
+// ============================================
+document.addEventListener("DOMContentLoaded", function () {
+    // Only run on mobile
+    if (window.innerWidth > 768) return;
+    
+    const bookSections = document.querySelectorAll('.book-sale');
+    
+    bookSections.forEach(section => {
+        const grid = section.querySelector('.book-grid');
+        const dotsContainer = section.querySelector('.pagination-dots');
+        if (!grid || !dotsContainer) return;
+        
+        const cards = grid.querySelectorAll('.book-card');
+        const cardCount = cards.length;
+        
+        // Generate dots
+        dotsContainer.innerHTML = '';
+        for (let i = 0; i < cardCount; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'dot' + (i === 0 ? ' active' : '');
+            dot.addEventListener('click', () => {
+                cards[i].scrollIntoView({ 
+                    behavior: 'smooth', 
+                    inline: 'start',
+                    block: 'nearest'
+                });
+            });
+            dotsContainer.appendChild(dot);
+        }
+        
+        // Update dots on scroll
+        grid.addEventListener('scroll', () => {
+            const scrollLeft = grid.scrollLeft;
+            const cardWidth = cards[0]?.offsetWidth + 12 || 0;
+            const activeIndex = Math.round(scrollLeft / cardWidth);
+            
+            dotsContainer.querySelectorAll('.dot').forEach((dot, idx) => {
+                dot.classList.toggle('active', idx === activeIndex);
+            });
+        });
+    });
+});
 
-/* Create dots */
-for (let i = 0; i < totalSlides; i++) {
-  const dot = document.createElement("div");
-  dot.className = "dot" + (i === 0 ? " active" : "");
-  dot.onclick = () => goToSlide(i);
-  pagination.appendChild(dot);
-}
-
-function updateSlider() {
-  slides.style.transform = `translateX(-${index * 100}%)`;
-  document.querySelectorAll(".dot").forEach((d, i) =>
-    d.classList.toggle("active", i === index)
-  );
-}
-
-function nextSlide() {
-  index = (index + 1) % totalSlides;
-  updateSlider();
-}
-
-function prevSlide() {
-  index = (index - 1 + totalSlides) % totalSlides;
-  updateSlider();
-}
-
-function goToSlide(i) {
-  index = i;
-  updateSlider();
-}
-
-/* Auto slide */
-setInterval(nextSlide, 4000);
-
-
-
-
-/* support */
+// ============================================
+// Category Page Load More Functionality
+// ============================================
+document.addEventListener("DOMContentLoaded", function () {
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const bookGrid = document.getElementById('bookGrid');
+    
+    // CRITICAL: Exit if elements don't exist (not on category pages)
+    if (!loadMoreBtn || !bookGrid) return;
+    
+    let currentPage = 1;
+    
+    loadMoreBtn.addEventListener('click', async function() {
+        loadMoreBtn.disabled = true;
+        loadMoreBtn.textContent = 'Loading...';
+        
+        try {
+            currentPage++;
+            const categorySlug = bookGrid.dataset.categorySlug;
+            
+            const response = await fetch(`/category/${categorySlug}/load-more/?page=${currentPage}`);
+            const data = await response.json();
+            
+            if (data.success && data.books.length > 0) {
+                // Append new books
+                data.books.forEach(book => {
+                    const bookCard = createBookCard(book);
+                    if (bookCard) bookGrid.appendChild(bookCard);
+                });
+                
+                // Hide button when no more books
+                if (!data.has_next) {
+                    loadMoreBtn.style.display = 'none';
+                }
+            } else {
+                loadMoreBtn.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Load more error:', error);
+            loadMoreBtn.textContent = 'Error loading more books';
+            setTimeout(() => {
+                loadMoreBtn.disabled = false;
+                loadMoreBtn.textContent = 'Load More Books';
+            }, 2000);
+        } finally {
+            loadMoreBtn.disabled = false;
+            loadMoreBtn.textContent = 'Load More Books';
+        }
+    });
+    
+    function createBookCard(book) {
+        try {
+            const link = document.createElement('a');
+            link.href = `/books/${book.slug}/`;
+            link.className = 'book-card-link';
+            
+            const priceHtml = book.old_price 
+                ? `<p class="price"><span class="old">Rs. ${book.old_price}</span> Rs. ${book.price}</p>`
+                : `<p class="price">Rs. ${book.price}</p>`;
+            
+            const saleTag = book.on_sale ? `<span class="sale-tag">Sale</span>` : '';
+            
+            link.innerHTML = `
+                <div class="book-card">
+                    <img src="${book.image_url}" alt="${book.title}" 
+                         onerror="this.src='/static/images/placeholder.png'; this.onerror=null;" />
+                    ${saleTag}
+                    <h3 class="book-title">${book.title}</h3>
+                    ${priceHtml}
+                    <button 
+                        class="cart-btn add-to-cart-btn" 
+                        data-id="${book.id}"
+                        data-type="book"
+                        data-title="${book.title}"
+                        data-price="${book.price}"
+                        data-image="${book.image_url}"
+                    >
+                        Add to cart
+                    </button>
+                </div>
+            `;
+            
+            return link;
+        } catch (error) {
+            console.error('Error creating book card:', error);
+            return null;
+        }
+    }
+});

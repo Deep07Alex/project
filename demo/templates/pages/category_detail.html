@@ -4,35 +4,22 @@
 {% block title %}{{ category_name }} - Family BookStore{% endblock %}
 
 {% block content %}
-<!-- Cart Sidebar (must be here even when extending base.html) -->
-<div class="overlay" id="cartOverlay"></div>
-<div class="cart-sidebar" id="cartSidebar">
-  <div class="cart-header">
-    <h2>Shopping Cart (<span id="cartCount">0</span>)</h2>
-    <span class="close-btn" id="closeCartBtn">&times;</span>
-  </div>
-  <div class="cart-items" id="cartItems">
-    <p class="empty-cart">Your cart is empty</p>
-  </div>
-  <div class="cart-footer" id="cartFooter" style="display: none;">
-    <div class="cart-total">
-      <span>Total:</span>
-      <span id="cartTotal">₹0.00</span>
-    </div>
-    <button class="checkout-btn" onclick="window.location.href='/checkout/'">
-      Proceed to Checkout
-    </button>
-  </div>
+<!-- DEBUG: Show counts -->
+<!-- Remove this after testing -->
+<div style="background: #f0f0f0; padding: 10px; margin: 10px; border: 1px solid #ccc;">
+  <strong>Debug Info:</strong> Total Books: {{ total_books|default:"0" }}, 
+  Showing: {{ books|length }}, Has More: {{ has_more|yesno:"Yes,No" }}
 </div>
 
 <section class="book-category-page">
   <h2 class="section-title">{{ category_name }}</h2>
   
-  <div class="book-grid">
+  <div class="book-grid" id="bookGrid" data-category-slug="{{ category_slug }}">
     {% for book in books %}
     <a href="{% url 'book_detail' book.slug %}" class="book-card-link">
       <div class="book-card">
-        <img src="{{ book.image.url }}" alt="{{ book.title }}" />
+        <img src="{{ book.image.url }}" alt="{{ book.title }}" 
+             onerror="this.src='{% static 'images/placeholder.png' %}'; this.onerror=null;" />
         {% if book.on_sale %}<span class="sale-tag">Sale</span>{% endif %}
         <h3 class="book-title">{{ book.title }}</h3>
         {% if book.old_price %}
@@ -40,7 +27,6 @@
         {% else %}
         <p class="price">Rs. {{ book.price }}</p>
         {% endif %}
-        <!-- FIXED: Added proper class and data attributes -->
         <button 
           class="cart-btn add-to-cart-btn" 
           data-id="{{ book.id }}"
@@ -57,10 +43,39 @@
     <p style="text-align: center; grid-column: 1/-1;">No books available in this category.</p>
     {% endfor %}
   </div>
+  
+  <!-- Load More Button - ALWAYS RENDER but hide with CSS if needed -->
+  {% if has_more %}
+  <div class="load-more-container" style="text-align: center; margin: 30px 0;">
+    <button id="loadMoreBtn" class="view-btn" style="display: inline-block;">
+      Load More Books ({{ total_books|add:"-20" }} more)
+    </button>
+  </div>
+  {% else %}
+  <!-- DEBUG: Show why button is hidden -->
+  <div style="text-align: center; margin: 30px; color: #999;">
+    No more books to load (Total: {{ total_books }})
+  </div>
+  {% endif %}
 </section>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/script.js' %}"></script>
 <script src="{% static 'js/cart.js' %}"></script>
+<!-- Add this to ensure load more works -->
+<script>
+// Make sure load more function is available
+document.addEventListener("DOMContentLoaded", function () {
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  const bookGrid = document.getElementById('bookGrid');
+  
+  if (loadMoreBtn && bookGrid) {
+    console.log('Load More: Elements found, attaching listener');
+    // Your existing JS will attach the listener
+  } else {
+    console.error('Load More: Elements NOT found!');
+  }
+});
+</script>
 {% endblock %}

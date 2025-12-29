@@ -1,6 +1,8 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import Http404
 from .models import Book
+from django.core.paginator import Paginator
+from django.http import JsonResponse
 
 def home_page(request):
     context = {
@@ -28,8 +30,9 @@ CATEGORY_SLUG_MAP = {
     'business-stock-market': {'category': 'business_stock_market', 'on_sale': False, 'name': 'BUSINESS & STOCK-MARKET'},
 }
 
+# homepage/views.py
+
 def category_view(request, category_slug):
-    """Generic view for all category pages"""
     config = CATEGORY_SLUG_MAP.get(category_slug)
     if not config:
         raise Http404(f"Category '{category_slug}' not found")
@@ -39,10 +42,56 @@ def category_view(request, category_slug):
         books = books.filter(on_sale=True)
     
     books = books.order_by('title')
+    total_books = books.count()
+
+    books_to_show = books[:20]
+
+    has_more = total_books > 20
+
+    print(f"DEBUG: Category '{category_slug}' - Total: {total_books}, Has More: {has_more}")
     
     return render(request, 'pages/category_detail.html', {
-        'books': books,
+        'books': books_to_show,
         'category_name': config['name'],
         'category_slug': category_slug,
+        'has_more': has_more,
+        'total_books': total_books,  
     })
     
+def category_load_more(request, category_slug):
+    config = CATEGORY_SLUG_MAP.get(category_slug)
+    if not config:
+        return JsonResponse({'success': False, 'error': 'Category not found'})
+    
+    try:
+        page = int(request.GET.get('page', 2))
+    except:
+        page = 2
+    
+    books = Book.objects.filter(category=config['category'])
+    if config['on_sale']:
+        books = books.filter(on_sale=True)
+    
+    books = books.order_by('title')
+    paginator = Paginator(books, 30)  # 30 per load
+    
+    try:
+        books_page = paginator.page(page)
+    except:
+        return JsonResponse({'success': False, 'error': 'No more books'})
+    
+    books_data = [{
+        'id': book.id,
+        'title': book.title,
+        'slug': book.slug,
+        'price': str(book.price),
+        'old_price': str(book.old_price) if book.old_price else None,
+        'image_url': book.image.url if book.image else '',
+        'on_sale': book.on_sale,
+    } for book in books_page]
+    
+    return JsonResponse({
+        'success': True,
+        'books': books_data,
+        'has_next': books_page.has_next(),
+    })
