@@ -1,4 +1,6 @@
 /* RESET */
+
+
 * {
     margin: 0;
     padding: 0;
@@ -107,4 +109,73 @@ body {
     color: #fff;
     padding: 30px 20px;
     text-align: center;
+}
+
+
+
+
+/* =========================
+   MOBILE RESPONSIVE FIXES
+   ========================= */
+@media (max-width: 768px) {
+
+  /* NAVBAR */
+  .navbar {
+    padding: 12px 15px;
+  }
+
+  .nav-links {
+    display: none; /* hide links on mobile */
+  }
+
+  .hamburger {
+    display: block;
+    font-size: 22px;
+    cursor: pointer;
+  }
+
+  .nav-icons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* SEARCH */
+  .search-input {
+    width: 140px;
+    font-size: 14px;
+  }
+
+  /* CART SIDEBAR */
+  .cart-sidebar {
+    width: 100%;
+    right: -100%;
+  }
+
+  .cart-sidebar.active {
+    right: 0;
+  }
+
+  /* CHECKOUT MAIN WRAPPER */
+  .min-h-screen {
+    padding: 10px;
+  }
+
+  /* RIGHT SUMMARY MOVES UP */
+  aside {
+    order: -1; /* move summary above form */
+    border-left: none !important;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  /* SECURE CHECKOUT BADGE */
+  .secure-mobile {
+    display: flex !important;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+
+  .secure-desktop {
+    display: none !important;
+  }
 }

@@ -5,32 +5,44 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Checkout — Family BookStore</title>
-    <script src="https://cdn.tailwindcss.com   "></script>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
     <link
       rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css   "
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
     />
-    <link rel="stylesheet" href="{% static 'css/payment.css' %}" />
+
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/payment.css' %}" />
   </head>
+
   <body class="bg-gray-100 font-sans text-gray-900">
-    <!-- Cart Sidebar -->
+    <!-- Overlay & Cart Sidebar -->
     <div class="overlay" id="cartOverlay"></div>
+
     <div class="cart-sidebar" id="cartSidebar">
-      <div class="cart-header">
-        <h2>Shopping Cart (<span id="cartCount">0</span>)</h2>
-        <span class="close-btn" id="closeCartBtn">&times;</span>
+      <div class="cart-header flex justify-between items-center mb-3">
+        <h2 class="font-semibold">
+          Shopping Cart (<span id="cartCount">0</span>)
+        </h2>
+        <span id="closeCartBtn" class="text-2xl cursor-pointer">&times;</span>
       </div>
-      <div class="cart-items" id="cartItems">
-        <p class="empty-cart">Your cart is empty</p>
+
+      <div id="cartItems">
+        <p class="empty-cart text-sm text-gray-500">Your cart is empty</p>
       </div>
-      <div class="cart-footer" id="cartFooter" style="display: none">
-        <div class="cart-total">
-          <span>Total:</span>
+
+      <div id="cartFooter" style="display: none">
+        <div class="flex justify-between font-semibold my-3">
+          <span>Total</span>
           <span id="cartTotal">₹0.00</span>
         </div>
         <button
-          class="checkout-btn"
+          class="w-full bg-[#e20074] text-white py-2 rounded-lg font-semibold"
           onclick="window.location.href='/checkout/'"
         >
           Proceed to Checkout
@@ -41,38 +53,27 @@
     <!-- Header -->
     <header>
       <nav class="navbar">
+        <!-- Hamburger Menu -->
+        <div class="hamburger" id="hamburger">
+          <i class="fa fa-bars"></i>
+        </div>
         <div class="nav-logo">
           <div class="logo"></div>
         </div>
         <div class="nav-links">
-          <a href="/">Home</a>
-          <a href="/productcatagory/">Product Categories</a>
-          <a href="/bulkpurchase/">Bulk Purchase</a>
-          <a href="/aboutus/">About Us</a>
+          <a href="#" class="active" id="homeLink">Home</a>
+          <a href="#">Product Categories</a>
+          <a href="#">Bulk Purchase</a>
+          <a href="#">About Us</a>
           <a href="#">Return & Replacement</a>
-          <a href="/contactinformation/">Contact Us</a>
-          <a href="#">Terms & Conditions</a>
-          <a href="#">Privacy Policy</a>
+          <a href="#">Contact Us</a>
+          {% comment %} <a href="#">Terms & Conditions</a>
+          <a href="#">Privacy Policy</a> {% endcomment %}
         </div>
         <div class="nav-icons">
-          <div class="search-container">
-            <input
-              type="text"
-              class="search-input"
-              placeholder="Search books..."
-              id="searchInput"
-            />
-            <div class="search-btn" id="searchBtn">
-              <i class="fa fa-search"></i>
-            </div>
-            <div id="searchDropdown" class="search-dropdown"></div>
-          </div>
           <div class="cart-icon-container" id="cartIcon">
             <i class="fa fa-shopping-cart"></i>
-            <span
-              class="cart-count"
-              id="cartCountBadgeNav"
-              style="display: none"
+            <span class="cart-count" id="cartCountBadge" style="display: none"
               >0</span
             >
           </div>
@@ -80,370 +81,207 @@
       </nav>
     </header>
 
+    <!-- MAIN -->
     <div class="min-h-screen flex items-center justify-center p-3 sm:p-6">
       <div
         class="bg-white rounded-2xl shadow-xl w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 overflow-hidden"
       >
-        <!-- LEFT: Forms -->
-        <div class="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+        <!-- ✅ SECURE CHECKOUT (MOBILE ONLY) -->
+        <div
+          class="secure-mobile hidden bg-[#ffe0f0] text-[#e20074] px-3 py-2 rounded-xl border border-[#e20074] font-semibold text-center m-3"
+        >
+          <i class="fa fa-lock"></i> Secure checkout
+        </div>
+
+        <!-- LEFT : FORMS -->
+        <div class="p-4 sm:p-6 lg:p-8 space-y-6">
           <h1 class="text-xl sm:text-2xl font-semibold">Checkout</h1>
-          <p class="text-sm sm:text-base text-gray-600">
-            Secure payment & delivery — enter mobile to verify, then fill
-            address.
+          <p class="text-sm text-gray-600">
+            Secure payment & delivery — verify mobile then enter address.
           </p>
 
-          <!-- Mobile verification -->
-          <div class="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200">
+          <!-- MOBILE VERIFY -->
+          <div class="bg-gray-50 p-4 rounded-lg border">
             <h3 class="text-sm font-medium mb-2">1) Verify mobile number</h3>
 
-            <!-- New: Delivery method selector -->
-            <div class="mb-3">
-              <label class="block text-xs text-gray-700 mb-1"
-                >Receive OTP via:</label
-              >
-              <div class="flex gap-3">
-                <label class="flex items-center gap-1">
-                  <input
-                    type="radio"
-                    name="deliveryMethod"
-                    value="sms"
-                    checked
-                  />
-                  <span class="text-sm">SMS</span>
-                </label>
-                <label class="flex items-center gap-1">
-                  <input type="radio" name="deliveryMethod" value="whatsapp" />
-                  <span class="text-sm">WhatsApp</span>
-                </label>
-              </div>
+            <div class="flex gap-3 mb-3">
+              <label class="flex items-center gap-1 text-sm">
+                <input type="radio" checked /> SMS
+              </label>
+              <label class="flex items-center gap-1 text-sm">
+                <input type="radio" /> WhatsApp
+              </label>
             </div>
 
-            <div
-              class="flex flex-col xs:flex-row gap-3 items-stretch xs:items-end"
-            >
-              <div class="flex-1">
-                <label class="block text-xs text-gray-700 mb-1" for="phone"
-                  >Mobile number</label
-                >
-                <input
-                  type="tel"
-                  id="phone"
-                  placeholder="9876543210"
-                  class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#e20074]"
-                />
-              </div>
+            <div class="flex gap-3 flex-col sm:flex-row">
+              <input
+                type="tel"
+                placeholder="9876543210"
+                class="flex-1 px-3 py-2 border rounded-lg"
+              />
               <button
-                id="sendOtpBtn"
-                class="bg-[#e20074] text-white px-4 py-2 rounded-lg font-semibold hover:bg-pink-700"
+                class="bg-[#e20074] text-white px-4 py-2 rounded-lg font-semibold"
               >
                 Send OTP
               </button>
             </div>
-
-            <p class="text-xs text-gray-500 mt-2">
-              We will send a one-time password (OTP) to verify your number.
-            </p>
           </div>
 
-          <!-- Address (locked until verified) -->
+          <!-- ADDRESS -->
           <div
-            id="addressSection"
-            class="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200 opacity-50 pointer-events-none"
-            aria-hidden="true"
+            class="bg-gray-50 p-4 rounded-lg border opacity-50 pointer-events-none"
           >
             <h3 class="text-sm font-medium mb-2">2) Shipping address</h3>
 
-            <div class="grid gap-3 grid-cols-1 sm:grid-cols-2">
-              <div>
-                <label class="block text-xs text-gray-700 mb-1" for="fullname"
-                  >Full name</label
-                >
-                <input
-                  id="fullname"
-                  type="text"
-                  placeholder="Your name"
-                  class="w-full px-3 py-2 border rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-xs text-gray-700 mb-1" for="email"
-                  >Email</label
-                >
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  class="w-full px-3 py-2 border rounded-lg text-sm"
-                />
-              </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <input
+                placeholder="Full name"
+                class="px-3 py-2 border rounded-lg"
+              />
+              <input placeholder="Email" class="px-3 py-2 border rounded-lg" />
             </div>
 
-            <div class="mt-3">
-              <label class="block text-xs text-gray-700 mb-1" for="addr"
-                >Address</label
-              >
-              <textarea
-                id="addr"
-                placeholder="House, street, landmark"
-                class="w-full px-3 py-2 border rounded-lg text-sm resize-y h-20"
-              ></textarea>
+            <textarea
+              class="w-full mt-3 px-3 py-2 border rounded-lg"
+              placeholder="Address"
+            ></textarea>
+
+            <div class="grid gap-3 sm:grid-cols-2 mt-3">
+              <input placeholder="City" class="px-3 py-2 border rounded-lg" />
+              <input placeholder="State" class="px-3 py-2 border rounded-lg" />
             </div>
 
-            <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 mt-3">
-              <div>
-                <label class="block text-xs text-gray-700 mb-1" for="city"
-                  >City</label
-                >
-                <input
-                  id="city"
-                  type="text"
-                  placeholder="City"
-                  class="w-full px-3 py-2 border rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-xs text-gray-700 mb-1" for="state"
-                  >State / Province</label
-                >
-                <input
-                  id="state"
-                  type="text"
-                  placeholder="State"
-                  class="w-full px-3 py-2 border rounded-lg text-sm"
-                />
-              </div>
-            </div>
-
-            <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 mt-3">
-              <div>
-                <label class="block text-xs text-gray-700 mb-1" for="pin"
-                  >PIN / ZIP</label
-                >
-                <input
-                  id="pin"
-                  type="text"
-                  placeholder="PIN code"
-                  class="w-full px-3 py-2 border rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-xs text-gray-700 mb-1" for="delivery"
-                  >Delivery type</label
-                >
-                <select
-                  id="delivery"
-                  class="w-full px-3 py-2 border rounded-lg text-sm"
-                >
-                  <option>Standard (3-6 days)</option>
-                  <option>Express (1-2 days)</option>
-                </select>
-              </div>
+            <div class="grid gap-3 sm:grid-cols-2 mt-3">
+              <input
+                placeholder="PIN Code"
+                class="px-3 py-2 border rounded-lg"
+              />
+              <select class="px-3 py-2 border rounded-lg">
+                <option>Standard (3–6 days)</option>
+                <option>Express (1–2 days)</option>
+              </select>
             </div>
           </div>
 
-          <!-- Payment Section -->
-          <div class="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200">
+          <!-- PAYMENT -->
+          <div class="bg-gray-50 p-4 rounded-lg border">
             <h3 class="text-sm font-medium mb-2">3) Payment</h3>
-            <p class="text-xs text-gray-500 mb-3">
-              You will be redirected to PayU's secure payment page
-            </p>
 
-            <!-- Hidden PayU Form -->
-            <form id="payuForm" method="post" action="" style="display: none">
-              <!-- Fields populated by JavaScript -->
-            </form>
-
-            <div class="flex justify-between items-center mt-4">
-              <p class="text-xs text-gray-500">Order total</p>
-              <p class="font-semibold text-lg">₹ {{ total|floatformat:2 }}</p>
+            <div class="flex justify-between font-semibold text-lg">
+              <span>Total</span>
+              <span>₹ {{ total|floatformat:2 }}</span>
             </div>
 
-            <div
-              class="flex flex-col xs:flex-row gap-2 mt-3 items-stretch xs:items-center"
+            <button
+              class="w-full mt-3 bg-[#e20074] text-white py-2 rounded-lg font-semibold"
             >
-              <button
-                id="payBtn"
-                class="bg-[#e20074] text-white px-4 py-2 rounded-lg font-semibold hover:bg-pink-700"
-                data-subtotal="{{ subtotal }}"
-                data-shipping="{{ shipping }}"
-                data-total="{{ total }}"
-              >
-                Pay ₹{{ total|floatformat:2 }}
-              </button>
-              <div class="ml-auto" id="statusPlaceholder"></div>
-            </div>
+              Pay ₹{{ total|floatformat:2 }}
+            </button>
           </div>
         </div>
 
-        <!-- RIGHT: Summary -->
-        <aside
-          class="bg-gradient-to-b from-white to-gray-50 p-4 sm:p-6 border-t lg:border-t-0 lg:border-l border-gray-200"
-        >
+        <!-- RIGHT : SUMMARY -->
+        <aside class="bg-gray-50 p-4 sm:p-6 border-t lg:border-t-0 lg:border-l">
+          <!-- ✅ SECURE CHECKOUT (DESKTOP ONLY) -->
           <div
-            class="flex flex-col xs:flex-row xs:justify-between xs:items-center gap-2"
+            class="secure-desktop inline-flex items-center gap-2 bg-[#ffe0f0] text-[#e20074] px-2 py-1 rounded-full border border-[#e20074] font-semibold mb-3"
           >
-            <div
-              class="inline-flex items-center gap-2 bg-[#ffe0f0] text-[#e20074] px-2 py-1 rounded-full border border-[#e20074] font-semibold"
-            >
-              <i class="fa fa-lock"></i> Secure checkout
-            </div>
-            <div class="text-xs text-gray-500">
-              Estimated delivery: <strong>Dec 15 - Dec 18</strong>
-            </div>
+            <i class="fa fa-lock"></i> Secure checkout
           </div>
 
-          <div class="mt-4 space-y-3">
-            {% for item in cart_items %}
-            <div class="flex items-center gap-3">
-              <div
-                class="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center font-bold text-sm"
-              >
-                {% if item.image %}
-                <img
-                  src="{{ item.image }}"
-                  alt="{{ item.title }}"
-                  class="w-full h-full object-cover rounded-lg"
-                  onerror="this.textContent='{{ item.title|slice:':2'|upper }}'"
-                />
-                {% else %} {{ item.initials|default:'BK' }} {% endif %}
-              </div>
-              <div class="flex-1">
-                <div class="font-semibold text-sm sm:text-base">
-                  {{ item.title }}
-                </div>
-                <div class="text-xs text-gray-500">
-                  Qty {{ item.quantity }} • {{ item.type|title }}
-                </div>
-              </div>
-              <div class="text-right">
-                <div class="font-semibold text-sm sm:text-base">
-                  ₹ {{ item.price|floatformat:2 }}
-                </div>
-                <div class="text-xs text-gray-500">incl. taxes</div>
-              </div>
+          {% for item in cart_items %}
+          <div class="flex gap-3 mb-3">
+            <div class="w-16 h-16 bg-gray-200 rounded-lg"></div>
+            <div class="flex-1">
+              <div class="font-semibold">{{ item.title }}</div>
+              <div class="text-xs text-gray-500">Qty {{ item.quantity }}</div>
             </div>
-            {% endfor %}
+            <div class="font-semibold">₹ {{ item.price }}</div>
+          </div>
+          {% endfor %}
+
+          <div class="border-t my-3"></div>
+
+          <div class="flex justify-between text-sm">
+            <span>Subtotal</span>
+            <span>₹ {{ subtotal }}</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span>Shipping</span>
+            <span>₹ {{ shipping }}</span>
           </div>
 
-          <div class="border-t border-gray-200 mt-4"></div>
-          <div
-            class="flex justify-between text-gray-500 mt-2 text-sm sm:text-base"
-          >
-            <div>Subtotal</div>
-            <div>₹ {{ subtotal|floatformat:2 }}</div>
+          <div class="flex justify-between font-semibold text-lg mt-2">
+            <span>Total</span>
+            <span>₹ {{ total }}</span>
           </div>
-          <div class="flex justify-between text-gray-500 text-sm sm:text-base">
-            <div>Shipping</div>
-            <div>₹ {{ shipping|floatformat:2 }}</div>
-          </div>
-          {% if addon_total > 0 %}
-          <div class="flex justify-between text-gray-500 text-sm sm:text-base">
-            <div>Add-ons</div>
-            <div>₹ {{ addon_total|floatformat:2 }}</div>
-          </div>
-          {% endif %}
-          <div class="border-t border-gray-200 my-2"></div>
-          <div class="flex justify-between font-semibold text-lg sm:text-xl">
-            <div>Total</div>
-            <div>₹ {{ total|floatformat:2 }}</div>
-          </div>
-
-          <p class="text-xs text-gray-500 mt-3">
-            Need help?
-            <a href="/contactinformation/" class="underline">Contact support</a>
-          </p>
         </aside>
       </div>
     </div>
 
-    <!-- OTP Modal -->
-    <div
-      id="otpModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden"
-    >
-      <div class="bg-white rounded-xl p-4 sm:p-6 w-11/12 max-w-md shadow-lg">
-        <div
-          class="flex flex-col xs:flex-row xs:justify-between xs:items-center gap-2"
-        >
-          <div>
-            <h3 class="text-sm font-medium">Verify your mobile</h3>
-            <p class="text-xs text-gray-500 mt-1">
-              Enter the 6-digit code we sent to <span id="maskedPhone"></span>
-            </p>
-          </div>
-          <button
-            id="closeOtp"
-            class="border border-[#e20074] text-[#e20074] px-3 py-1 rounded hover:bg-[#ffe0f0] text-sm"
-          >
-            Close
-          </button>
-        </div>
-
-        <div class="flex justify-center gap-1 sm:gap-2 mt-4">
-          <input
-            type="text"
-            maxlength="1"
-            inputmode="numeric"
-            class="otp-digit w-8 h-10 sm:w-10 sm:h-12 text-center border rounded-lg"
-          />
-          <input
-            type="text"
-            maxlength="1"
-            inputmode="numeric"
-            class="otp-digit w-8 h-10 sm:w-10 sm:h-12 text-center border rounded-lg"
-          />
-          <input
-            type="text"
-            maxlength="1"
-            inputmode="numeric"
-            class="otp-digit w-8 h-10 sm:w-10 sm:h-12 text-center border rounded-lg"
-          />
-          <input
-            type="text"
-            maxlength="1"
-            inputmode="numeric"
-            class="otp-digit w-8 h-10 sm:w-10 sm:h-12 text-center border rounded-lg"
-          />
-          <input
-            type="text"
-            maxlength="1"
-            inputmode="numeric"
-            class="otp-digit w-8 h-10 sm:w-10 sm:h-12 text-center border rounded-lg"
-          />
-          <input
-            type="text"
-            maxlength="1"
-            inputmode="numeric"
-            class="otp-digit w-8 h-10 sm:w-10 sm:h-12 text-center border rounded-lg"
-          />
-        </div>
-
-        <div
-          class="flex flex-col xs:flex-row xs:justify-center xs:items-center gap-2 mt-3"
-        >
-          <div id="otpTimer" class="text-xs text-gray-500">00:30</div>
-          <button
-            id="resendOtp"
-            class="border border-[#e20074] text-[#e20074] px-2 py-1 rounded hover:bg-[#ffe0f0] text-xs"
-          >
-            Resend
-          </button>
-        </div>
-
-        <div class="flex justify-center mt-3">
-          <button
-            id="verifyOtpBtn"
-            class="bg-[#e20074] text-white px-4 py-2 rounded-lg font-semibold hover:bg-pink-700"
-          >
-            Verify
-          </button>
-        </div>
-
-        <div id="otpHint" class="text-xs text-gray-500 text-center mt-2"></div>
+    <!-- SIDEBAR MENU -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h3>Menu</h3>
+        <span id="closeSidebar">&times;</span>
       </div>
+      <ul class="sidebar-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/productcatagory/">Product Categories</a></li>
+        <li><a href="/bulkpurchase/">Bulk Purchase</a></li>
+        <li><a href="/aboutus/">About Us</a></li>
+        <li><a href="/return/">Return & Replacement</a></li>
+        <li><a href="/contactinformation/">Contact Us</a></li>
+      </ul>
     </div>
 
-    <!-- Scripts -->
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-container">
+        <div class="footer-section">
+          <h3>Follow us on Social Media</h3>
+          <div class="social-icons">
+            <a href="#"><i class="fab fa-facebook-f"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+          </div>
+        </div>
+        <div class="footer-section">
+          <h3>Quick Links</h3>
+          <ul>
+            <li><a href="/aboutus/">About Us</a></li>
+            <li><a href="/contactinformation/">Contact Us</a></li>
+            <li><a href="#">Bulk Purchase</a></li>
+          </ul>
+        </div>
+        <div class="footer-section about">
+          <h3>About the Shop</h3>
+          <p>
+            We’re a family-run bookstore offering the best deals on your
+            favorite titles.
+          </p>
+          <img
+            src="{% static 'images/logo.png' %}"
+            alt="Family BookStore Logo"
+            class="footer-logo"
+          />
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2025, Family Book Store</p>
+        <div class="payment-icons">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png     "
+            alt="Visa"
+          />
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/0/04/Mastercard-logo.png     "
+            alt="MasterCard"
+          />
+        </div>
+      </div>
+    </footer>
+
+    <!-- JS -->
     <script src="{% static 'js/script.js' %}"></script>
     <script src="{% static 'js/cart.js' %}"></script>
     <script src="{% static 'js/payment.js' %}"></script>
