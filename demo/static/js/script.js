@@ -4,58 +4,88 @@
 const slides = document.getElementById("slides");
 const dotsContainer = document.getElementById("pagination");
 
-// Only run if hero slider exists on the page
 if (slides && dotsContainer) {
-  let currentSlide = 0;
-  const totalSlides = document.querySelectorAll(".slide").length;
-  let sliderInterval;
+  const slideCount = slides.children.length;
+  let index = 0;
+  let interval;
 
-  /* create dots */
+  // Create dots
   dotsContainer.innerHTML = "";
-  for (let i = 0; i < totalSlides; i++) {
+  for (let i = 0; i < slideCount; i++) {
     const dot = document.createElement("div");
     dot.className = "dot" + (i === 0 ? " active" : "");
-    dot.onclick = () => goToSlide(i);
+    dot.addEventListener("click", () => goToSlide(i));
     dotsContainer.appendChild(dot);
   }
 
   function updateSlider() {
-    slides.style.transform = `translateX(-${currentSlide * 100}%)`;
-    document
-      .querySelectorAll(".dot")
-      .forEach((d, i) => d.classList.toggle("active", i === currentSlide));
+    slides.style.transform = `translateX(-${index * 100}%)`;
+    document.querySelectorAll(".dot").forEach((dot, i) => {
+      dot.classList.toggle("active", i === index);
+    });
   }
 
   function nextSlide() {
-    currentSlide = (currentSlide + 1) % totalSlides;
+    index = (index + 1) % slideCount;
     updateSlider();
   }
 
   function prevSlide() {
-    currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+    index = (index - 1 + slideCount) % slideCount;
     updateSlider();
   }
 
-  function goToSlide(index) {
-    currentSlide = index;
+  function goToSlide(i) {
+    index = i;
     updateSlider();
-    restartAutoSlide();
+    resetAuto();
   }
 
-  function startAutoSlide() {
-    clearInterval(sliderInterval);
-    sliderInterval = setInterval(nextSlide, 4000);
+  function startAuto() {
+    interval = setInterval(nextSlide, 4000);
   }
 
-  function restartAutoSlide() {
-    startAutoSlide();
+  function resetAuto() {
+    clearInterval(interval);
+    startAuto();
   }
 
-  /* init */
-  startAutoSlide();
+  // Init
+  updateSlider();
+  startAuto();
+
   window.nextSlide = nextSlide;
   window.prevSlide = prevSlide;
 }
+
+
+
+// swipe touch
+
+  const slider = document.querySelector(".slider");
+  let startX = 0;
+  let endX = 0;
+
+  slider.addEventListener("touchstart", (e) => {
+    startX = e.touches[0].clientX;
+  }, { passive: true });
+
+  slider.addEventListener("touchmove", (e) => {
+    endX = e.touches[0].clientX;
+  }, { passive: true });
+
+  slider.addEventListener("touchend", () => {
+    const swipeDistance = startX - endX;
+
+    if (swipeDistance > 50) {
+      nextSlide(); // swipe left
+    } else if (swipeDistance < -50) {
+      prevSlide(); // swipe right
+    }
+  });
+
+
+
 
 // ============================================
 // Advertisement Slider (FIXED - Add null check)
