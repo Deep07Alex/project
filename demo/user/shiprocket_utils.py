@@ -104,40 +104,34 @@ class ShiprocketAPI:
 
             order_items = []
             for item in items:
-                order_items.append(
-                    {
-                        "name": item.title[:100],
-                        "sku": f"FB-{item.item_type}-{item.item_id}",
-                        "units": item.quantity,
-                        "selling_price": float(item.price),
-                        "discount": 0,
-                        "tax": 0,
-                        "hsn": "4901",
-                    }
-                )
+                # Clean SKU format - no spaces/special chars
+                if item.item_type == "addon":
+                    clean_sku = f"ADDON_{item.title.replace(' ', '_').upper()}"
+                    hsn = "9999"
+                else:
+                    clean_sku = f"BOOK_{item.item_type}_{item.item_id}"
+                    hsn = "4901"
 
-            for item in items.filter(item_type="addon"):
-                order_items.append(
-                    {
-                        "name": item.title[:100],
-                        "sku": f"FB-ADDON-{item.title}",
-                        "units": 1,
-                        "selling_price": float(item.price),
-                        "discount": 0,
-                        "tax": 0,
-                        "hsn": "9999",
-                    }
-                )
+                order_items.append({
+                    "name": item.title[:100],
+                    "sku": clean_sku,
+                    "units": item.quantity,
+                    "selling_price": float(item.price),
+                    "discount": 0,
+                    "tax": 0,
+                    "hsn": hsn,
+                })
 
-            total_items = sum(
-                item.quantity for item in items if item.item_type != "addon"
-            )
-            total_weight = round(0.5 * total_items, 2)
+            # FIX: Calculate subtotal from actual items (includes addons)
+            actual_subtotal = sum(float(item.price) * item.quantity for item in items)
+            
+            # Weight calculation (books only, exclude addons)
+            total_book_items = sum(item.quantity for item in items if item.item_type != "addon")
+            total_weight = round(0.5 * total_book_items, 2)
             package_length = 20
             package_breadth = 15
-            package_height = max(2, total_items * 2)
+            package_height = max(2, total_book_items * 2)
 
-            # Map our payment_method to Shiprocket's value
             shiprocket_payment_method = (
                 "COD" if getattr(order, "payment_method", "") == "cod" else "prepaid"
             )
@@ -145,7 +139,6 @@ class ShiprocketAPI:
             payload = {
                 "order_id": f"FB{order.id}",
                 "order_date": order.created_at.strftime("%Y-%m-%d %H:%M"),
-                # use the pickup name from Shiprocket (e.g. "Gopal")
                 "pickup_location": settings.SHIPROCKET_PICKUP_LOCATION,
                 "channel_id": str(self.channel_id) if self.channel_id else "",
                 "billing_customer_name": order.full_name,
@@ -165,25 +158,37 @@ class ShiprocketAPI:
                 "giftwrap_charges": 0,
                 "transaction_charges": 0,
                 "total_discount": float(order.discount),
-                "sub_total": float(order.subtotal),
+                "sub_total": actual_subtotal, 
                 "length": package_length,
                 "breadth": package_breadth,
                 "height": package_height,
                 "weight": total_weight,
             }
+            
             headers = self.get_headers()
             response = requests.post(url, json=payload, headers=headers, timeout=30)
             response.raise_for_status()
             data = response.json()
-
-            # Shiprocket often returns order/shipment fields at top level (status = "NEW")
+            
+            # ENHANCED: Capture Shiprocket SKU and item details from response
             if data.get("order_id") and data.get("shipment_id"):
                 logger.info(f"Shiprocket order created: {data.get('order_id')}")
+                
+                # Save Shiprocket SKU for each item
+                response_items = data.get("order_items", [])
+                for i, response_item in enumerate(response_items):
+                    if i < len(items):
+                        # Capture Shiprocket's SKU (may be different from our clean_sku)
+                        items[i].shiprocket_sku = response_item.get("sku", "")
+                        items[i].save()
+                
                 return True, {
                     "order_id": data.get("order_id"),
+                    "shipment_id": data.get("shipment_id"),
                     "awb_code": data.get("awb_code") or "",
                     "courier_name": data.get("courier_name") or "",
                     "label_url": data.get("label_url"),
+                    "order_items": data.get("order_items", []),  # Full item details
                 }
             else:
                 logger.error(f"Shiprocket order creation failed: {data}")
@@ -202,3 +207,30 @@ class ShiprocketAPI:
         except Exception as e:
             logger.error(f"Webhook verification error: {str(e)}")
             return False
+    def get_tracking_details(self, shiprocket_order_id):
+        """
+        Fetch real-time tracking details from Shiprocket
+        """
+        try:
+            url = f"{self.BASE_URL}/courier/track"
+            headers = self.get_headers()
+            params = {"order_id": shiprocket_order_id}
+            
+            response = requests.get(url, headers=headers, params=params, timeout=15)
+            response.raise_for_status()
+            
+            data = response.json()
+            if data.get('tracking_data'):
+                return True, {
+                    'status': data['tracking_data'].get('shipment_track')[0].get('current_status'),
+                    'awb': data['tracking_data'].get('shipment_track')[0].get('awb_code'),
+                    'courier': data['tracking_data'].get('shipment_track')[0].get('courier_company'),
+                    'tracking_url': data['tracking_data'].get('track_url'),
+                    'estimated_delivery': data.get('etd'),
+                    'tracking_history': data['tracking_data'].get('shipment_track_activities', [])
+                }
+            return False, "Tracking data not available"
+            
+        except Exception as e:
+            logger.error(f"Shiprocket tracking error: {str(e)}")
+            return False, str(e)

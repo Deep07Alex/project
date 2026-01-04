@@ -1,10 +1,12 @@
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from django.conf import settings
-from django.shortcuts import render, redirect
+from django.shortcuts import render, get_object_or_404
 from django.core.cache import cache
+from datetime import datetime, timedelta, timezone
 from .models import Order, OrderItem
+import requests
 from .payu_utils import (
     generate_payu_hash,
     generate_transaction_id,
@@ -24,8 +26,6 @@ from .email_otp_utils import (
 
 import json
 import logging
-from django.views.decorators.http import require_GET
-
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +134,7 @@ def get_cart_items(request):
     shipping = 0 if product_total >= 499 else 49.00
     discount = 100 if total_books >= 10 else 0
 
-    # Cart total must NOT include shipping â€" only products + addons
+    # Cart total must NOT include shipping — only products + addons
     cart_total = product_total + addon_total
 
     return JsonResponse(
@@ -149,6 +149,7 @@ def get_cart_items(request):
             "totalbooks": total_books,
         }
     )
+
 
 @require_POST
 def remove_from_cart(request):
@@ -228,20 +229,52 @@ def update_cart_quantity(request):
 
 @require_GET
 def check_checkout_lock(request):
-    """Return whether checkout is locked for this session"""
-    return JsonResponse({"locked": bool(request.session.get("checkout_locked"))})
+    """
+    FIXED: Check lock and auto-clear stale locks (>5 minutes)
+    Returns: {"locked": false} if stale or no lock
+    """
+    lock_time = request.session.get("checkout_lock_time")
+    
+    if lock_time:
+        lock_datetime = datetime.fromtimestamp(lock_time, tz=timezone.utc)
+        # Reduce timeout to 5 minutes
+        if datetime.now(timezone.utc) - lock_datetime > timedelta(minutes=5):
+            # Clear stale lock
+            request.session.pop("checkout_locked", None)
+            request.session.pop("checkout_lock_time", None)
+            request.session.modified = True
+            return JsonResponse({"locked": False, "stale_cleared": True})
+    
+    is_locked = bool(request.session.get("checkout_locked"))
+    return JsonResponse({"locked": is_locked})
+
 
 # ---------------- CHECKOUT ---------------- #
 def checkout(request):
-    """New checkout page with email verification"""
+    """
+    FIXED: Aggressively clear stale locks on every visit
+    Allow immediate retry after failure
+    """
     try:
-        # If user already started a payment, do not allow going back to checkout
-        # if request.session.get("checkout_locked"):
-        #    return render(
-        #        request,
-        #        "pages/payment_failure.html",
-        #        {"error": "Payment already initiated. Please try again."},
-        #    )
+        # FORCE clear any locks older than 5 minutes
+        lock_time = request.session.get("checkout_lock_time")
+        if lock_time:
+            lock_datetime = datetime.fromtimestamp(lock_time, tz=timezone.utc)
+            if datetime.now(timezone.utc) - lock_datetime > timedelta(minutes=5):
+                request.session.pop("checkout_locked", None)
+                request.session.pop("checkout_lock_time", None)
+                request.session.modified = True
+        
+        # If still locked (fresh lock), show failure page with retry button
+        if request.session.get("checkout_locked"):
+            return render(
+                request,
+                "pages/payment_failure.html",
+                {
+                    "error": "Payment session is active. Please complete it or wait a few minutes.",
+                    "show_retry_button": True,  # Show manual retry button
+                },
+            )
 
         cart = request.session.get("cart", {})
         addons = request.session.get("cart_addons", {})
@@ -252,15 +285,11 @@ def checkout(request):
                 status=400,
             )
 
-        subtotal = sum(
-            float(item["price"]) * item["quantity"] for item in cart.values()
-        )
-
+        subtotal = sum(float(item["price"]) * item["quantity"] for item in cart.values())
         addon_prices = {"Bag": 30, "bookmark": 20, "packing": 20}
         addon_total = sum(
             addon_prices.get(key, 0) for key, selected in addons.items() if selected
         )
-
         total_books = sum(item["quantity"] for item in cart.values())
         shipping = 0 if subtotal >= 499 else 49.00
         discount = 100 if total_books >= 10 else 0
@@ -268,15 +297,13 @@ def checkout(request):
 
         cart_items = []
         for key, item in cart.items():
-            cart_items.append(
-                {
-                    "title": item["title"],
-                    "price": float(item["price"]),
-                    "quantity": item["quantity"],
-                    "image": item.get("image", ""),
-                    "type": item["type"],
-                }
-            )
+            cart_items.append({
+                "title": item["title"],
+                "price": float(item["price"]),
+                "quantity": item["quantity"],
+                "image": item.get("image", ""),
+                "type": item["type"],
+            })
 
         return render(
             request,
@@ -360,9 +387,10 @@ def initiate_payu_payment(request):
                 {"success": False, "error": "Please verify your email first"}
             )
 
-        # ðŸ”’ lock checkout once payment starts
+        # 🔒 lock checkout once payment starts
         request.session["checkout_locked"] = True
-
+        request.session["checkout_lock_time"] = datetime.now(tz=timezone.utc).timestamp()
+        
         cart = request.session.get("cart", {})
         addons = request.session.get("cart_addons", {})
         data = json.loads(request.body)
@@ -512,9 +540,10 @@ def place_cod_order(request):
                 {"success": False, "error": "Please verify your email first"}
             )
 
-        # ðŸ”’ lock checkout once COD processing starts
+        # 🔒 lock checkout once COD processing starts
         request.session["checkout_locked"] = True
-
+        request.session["checkout_lock_time"] = datetime.now(tz=timezone.utc).timestamp()
+        
         cart = request.session.get("cart", {})
         addons = request.session.get("cart_addons", {})
         data = json.loads(request.body)
@@ -585,7 +614,7 @@ def place_cod_order(request):
                 image_url=item.get("image", ""),
             )
 
-        addon_names = {"Bag": "Bag", "bookmark": "Bookmark", "Packing": "Packing"}
+        addon_names = {"Bag": "Bag", "bookmark": "Bookmark", "packing": "Packing"}
         for addon_key, selected in addons.items():
             if selected:
                 OrderItem.objects.create(
@@ -641,11 +670,12 @@ def place_cod_order(request):
 @csrf_exempt
 def payment_success(request):
     """
-    PayU success (POST) + COD success page (GET).
-
-    POST: verify hash, create Shiprocket order, send emails.
-    GET: just show success for an existing order_id (used by COD).
+    FIXED: Always clear lock on success (POST or GET)
     """
+    # Clear lock immediately regardless of method
+    request.session.pop("checkout_locked", None)
+    request.session.pop("checkout_lock_time", None)
+    
     if request.method == "POST":
         response_data = request.POST.dict()
         received_hash = response_data.get("hash", "")
@@ -673,7 +703,6 @@ def payment_success(request):
                         shiprocket_success, shiprocket_result = shiprocket.create_order(
                             order, items
                         )
-
                         if shiprocket_success:
                             order.shiprocket_order_id = shiprocket_result.get("order_id")
                             order.awb_number = shiprocket_result.get("awb_code") or ""
@@ -685,66 +714,65 @@ def payment_success(request):
                                 order.status = "processing"
                             order.save()
                             shiprocket_data = shiprocket_result
-                        else:
-                            logger.error(f"Shiprocket failed: {shiprocket_result}")
                     except Exception as shiprocket_error:
-                        logger.error(
-                            f"Shiprocket error: {str(shiprocket_error)}",
-                            exc_info=True,
-                        )
+                        logger.error(f"Shiprocket error: {str(shiprocket_error)}", exc_info=True)
 
                     admin_success, _ = send_admin_order_notification(order, items)
-                    customer_success, _ = send_customer_order_confirmation(
-                        order, items
-                    )
+                    customer_success, _ = send_customer_order_confirmation(order, items)
 
+                    # Clear ALL session data
                     request.session.pop("cart", None)
                     request.session.pop("cart_addons", None)
                     request.session.pop("payu_txnid", None)
                     request.session.pop("order_id", None)
                     request.session.pop("verified_email", None)
-                    request.session.pop("checkout_locked", None)
 
-                    return render(
+                    # Add cache control headers to prevent back button issues
+                    response = render(
                         request,
                         "pages/payment_success.html",
                         {
                             "order": order,
                             "shiprocket_data": shiprocket_data,
+                            "shiprocket_order_id": order.shiprocket_order_id,
                             "shiprocket_status": "Success"
                             if shiprocket_success
                             else "Manual processing required",
                             "notification_sent": customer_success,
                         },
                     )
+                    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+                    response["Pragma"] = "no-cache"
+                    response["Expires"] = "0"
+                    return response
+                    
                 else:
                     order.delete()
                     return render(
                         request,
                         "pages/payment_failure.html",
-                        {"error": f"Payment status: {status}"},
+                        {"error": f"Payment status: {status}", "show_retry_button": True},
                     )
             except Order.DoesNotExist:
                 return render(
                     request,
                     "pages/payment_failure.html",
-                    {"error": "Order not found"},
+                    {"error": "Order not found", "show_retry_button": True},
                 )
         else:
             return render(
                 request,
                 "pages/payment_failure.html",
-                {"error": "Security verification failed"},
+                {"error": "Security verification failed", "show_retry_button": True},
             )
 
-    # ---- NEW: handle COD / direct success redirect ----
     if request.method == "GET":
         order_id = request.GET.get("order_id")
         if not order_id:
             return render(
                 request,
                 "pages/payment_failure.html",
-                {"error": "Missing order id"},
+                {"error": "Missing order id", "show_retry_button": True},
             )
 
         try:
@@ -753,37 +781,43 @@ def payment_success(request):
             return render(
                 request,
                 "pages/payment_failure.html",
-                {"error": "Order not found"},
+                {"error": "Order not found", "show_retry_button": True},
             )
 
-        # For COD, order + Shiprocket already created in place_cod_order
-        # âœ… allow fresh checkout after COD success
         request.session.pop("checkout_locked", None)
-
-        return render(
+        request.session.pop("checkout_lock_time", None)
+        
+        response = render(
             request,
             "pages/payment_success.html",
             {
                 "order": order,
+                "shiprocket_order_id": order.shiprocket_order_id,
                 "shiprocket_data": None,
                 "shiprocket_status": "COD order placed",
                 "notification_sent": True,
             },
         )
+        response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
 
-    # any other HTTP method
     return render(
         request,
         "pages/payment_failure.html",
-        {"error": "Invalid request method"},
+        {"error": "Invalid request method", "show_retry_button": True},
     )
 
 
 @csrf_exempt
 def payment_failure(request):
-    """Handle failed/cancelled PayU payment"""
-    # âœ… allow fresh checkout after showing failure
+    """
+    FIXED: Clear lock immediately on payment failure
+    """
+    #  Clear lock on ANY failure request
     request.session.pop("checkout_locked", None)
+    request.session.pop("checkout_lock_time", None)
 
     if request.method == "POST":
         response_data = request.POST.dict()
@@ -794,17 +828,198 @@ def payment_failure(request):
             except Order.DoesNotExist:
                 pass
 
-        return render(
+        response = render(
             request,
             "pages/payment_failure.html",
-            {"error": response_data.get("error_Message", "Payment failed")},
+            {
+                "error": response_data.get("error_Message", "Payment failed"),
+                "show_retry_button": True  #  Always show retry button
+            },
         )
+        response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
 
-    return render(
+    # GET request - show failure page with retry option
+    response = render(
         request,
         "pages/payment_failure.html",
-        {"error": "Payment cancelled or failed"},
+        {
+            "error": "Payment cancelled or failed",
+            "show_retry_button": True
+        },
     )
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    response["Expires"] = "0"
+    return response
+
+
+@require_POST
+def clear_payment_session(request):
+    """Clear payment-related session data after successful payment"""
+    request.session.pop("cart", None)
+    request.session.pop("cart_addons", None)
+    request.session.pop("payu_txnid", None)
+    request.session.pop("order_id", None)
+    request.session.pop("verified_email", None)
+    request.session.pop("checkout_locked", None)
+    request.session.pop("checkout_lock_time", None)
+    return JsonResponse({"success": True})
+
+
+@require_POST
+def clear_checkout_lock(request):
+    """
+    NEW: Manual endpoint to clear stuck checkout lock
+    Called when user clicks "Try Again" button
+    """
+    request.session.pop("checkout_locked", None)
+    request.session.pop("checkout_lock_time", None)
+    request.session.pop("payu_txnid", None)
+    request.session.pop("order_id", None)
+    request.session.pop("verified_email", None)
+    request.session.modified = True
+    
+    logger.info(f"Manually cleared checkout lock for session {request.session.session_key}")
+    return JsonResponse({"success": True, "message": "Lock cleared. You can retry checkout."})
+
+
+def track_order(request):
+    """
+    Public order tracking page - customers can track their order status
+    """
+    order_id = request.GET.get('order_id')
+    order = None
+    tracking_info = None
+    
+    if order_id:
+        try:
+            order = get_object_or_404(Order, id=order_id)
+            
+            # If Shiprocket order exists, fetch latest tracking
+            if order.shiprocket_order_id:
+                shiprocket = ShiprocketAPI()
+                success, tracking_info = shiprocket.get_tracking_details(
+                    order.shiprocket_order_id
+                )
+                
+                # Update local order with latest status
+                if success and tracking_info:
+                    order.shiprocket_status = tracking_info.get('status')
+                    order.awb_number = tracking_info.get('awb')
+                    order.courier_name = tracking_info.get('courier')
+                    order.save()
+                    
+        except Order.DoesNotExist:
+            pass
+    
+    return render(request, 'pages/order_tracking.html', {
+        'order': order,
+        'tracking_info': tracking_info,
+    })
+    
+@require_GET
+def get_shiprocket_product_status(request):
+    """
+    Fetch real-time product status from Shiprocket using SKU
+    """
+    sku = request.GET.get('sku')
+    if not sku:
+        return JsonResponse({"success": False, "error": "SKU is required"})
+
+    try:
+        shiprocket = ShiprocketAPI()
+        url = f"{shiprocket.BASE_URL}/products/show"
+        headers = shiprocket.get_headers()
+        params = {"sku": sku}
+        
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if data.get("status") == 200 and data.get("data"):
+            product = data["data"]
+            return JsonResponse({
+                "success": True,
+                "sku": sku,
+                "status": product.get("status"),
+                "stock": product.get("stock"),
+                "price": product.get("price"),
+                "name": product.get("name"),
+                "shiprocket_product_id": product.get("id"),
+            })
+        return JsonResponse({
+            "success": False,
+            "error": f"Product not found for SKU: {sku}"
+        })
+            
+    except Exception as e:
+        logger.error(f"Shiprocket product status error: {str(e)}")
+        return JsonResponse({"success": False, "error": str(e)})
+
+
+@require_GET
+def get_order_shiprocket_details(request, order_id):
+    """
+    Fetch complete Shiprocket order details with SKU mapping
+    """
+    try:
+        order = get_object_or_404(Order, id=order_id)
+        
+        if not order.shiprocket_order_id:
+            return JsonResponse({
+                "success": False,
+                "error": "No Shiprocket order ID found"
+            })
+
+        shiprocket = ShiprocketAPI()
+        url = f"{shiprocket.BASE_URL}/orders/show/{order.shiprocket_order_id}"
+        headers = shiprocket.get_headers()
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if data.get("order_id"):
+            # Map Shiprocket items with local items
+            shiprocket_items = data.get("order_items", [])
+            local_items = list(order.items.all())
+            
+            combined_items = []
+            for i, shiprocket_item in enumerate(shiprocket_items):
+                local_item = local_items[i] if i < len(local_items) else None
+                
+                combined_items.append({
+                    "title": shiprocket_item.get("name"),
+                    "book_id": local_item.item_id if local_item else "N/A",
+                    "shiprocket_sku": shiprocket_item.get("sku"),
+                    "quantity": shiprocket_item.get("quantity"),
+                    "price": shiprocket_item.get("selling_price"),
+                    "status": shiprocket_item.get("status", "Pending"),
+                })
+            
+            return JsonResponse({
+                "success": True,
+                "shiprocket_order_id": data.get("order_id"),
+                "status": data.get("status"),
+                "awb_code": data.get("awb_code"),
+                "courier_name": data.get("courier_name"),
+                "label_url": data.get("label_url"),
+                "items": combined_items
+            })
+        else:
+            return JsonResponse({
+                "success": False,
+                "error": "Order not found in Shiprocket"
+            })
+            
+    except Exception as e:
+        logger.error(f"Shiprocket order details error: {str(e)}")
+        return JsonResponse({"success": False, "error": str(e)})
 
 
 # ---------------- SHIPROCKET WEBHOOK ---------------- #
@@ -818,28 +1033,26 @@ def shiprocket_webhook(request):
 
     try:
         incoming_token = request.headers.get("x-api-key")
-        payload = request.body
-
-        logger.info("=== WEBHOOK RECEIVED ===")
-        logger.info(f"Token Received: {incoming_token}")
-
-        if (
-            not incoming_token
-            or incoming_token != settings.SHIPROCKET_WEBHOOK_SECRET
-        ):
-            logger.warning(
-                f"Unauthorized: Received {incoming_token}, "
-                f"expected {settings.SHIPROCKET_WEBHOOK_SECRET}"
-            )
+        if not incoming_token or incoming_token != settings.SHIPROCKET_WEBHOOK_SECRET:
             return JsonResponse({"status": "unauthorized"}, status=401)
 
-        logger.info("âœ… Token verified successfully!")
-        data = json.loads(payload)
+        data = json.loads(request.body)
+        
+        # Extract tracking data
+        shiprocket_order_id = data.get('order_id')
+        if not shiprocket_order_id:
+            return JsonResponse({"status": "no order_id"}, status=400)
 
-        # TODO: map data into Order.tracking_data / shiprocket_status here
+        # Update order with latest tracking
+        Order.objects.filter(shiprocket_order_id=shiprocket_order_id).update(
+            shiprocket_status=data.get('current_status', {}).get('name'),
+            awb_number=data.get('awb_code'),
+            courier_name=data.get('courier_name'),
+            tracking_data=data,  
+        )
+        
         return JsonResponse({"status": "success"}, status=200)
-    except json.JSONDecodeError:
-        return JsonResponse({"status": "invalid_json"}, status=400)
+        
     except Exception as e:
         logger.error(f"Webhook error: {str(e)}", exc_info=True)
         return JsonResponse({"status": "error"}, status=500)
@@ -965,7 +1178,7 @@ def payment_redirect(request):
         return render(
             request,
             "pages/payment_failure.html",
-            {"error": "Payment session expired. Please try again."},
+            {"error": "Payment session expired. Please try again.", "show_retry_button": True},
         )
 
     context["payu_url"] = payu_url

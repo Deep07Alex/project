@@ -1,6 +1,34 @@
 // static/js/checkout.js - Email OTP, Shipping & Payment Flow
 
 document.addEventListener("DOMContentLoaded", function () {
+  // Check if checkout is locked
+  async function checkCheckoutLock() {
+    try {
+      const response = await fetch("/api/check-checkout-lock/");
+      const data = await response.json();
+
+      if (data.locked) {
+        const overlay = document.getElementById("checkoutOverlay");
+        const overlayText = document.getElementById("checkoutOverlayText");
+        if (overlay && overlayText) {
+          overlayText.textContent =
+            "A payment is already in progress. Please complete it or wait a few minutes...";
+          overlay.classList.remove("hidden");
+        }
+        // Optionally redirect after a delay
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 5000);
+        return true;
+      }
+    } catch (error) {
+      console.error("Lock check failed:", error);
+    }
+    return false;
+  }
+
+  checkCheckoutLock();
+
   // DOM References
   const emailInput = document.getElementById("emailInput");
   const sendOtpBtn = document.getElementById("sendOtpBtn");
@@ -16,7 +44,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const errorMessage = document.getElementById("errorMessage");
   const proceedToPaymentBtn = document.getElementById("proceedToPaymentBtn");
   const orderSummary = document.getElementById("orderSummary");
-  const paymentRadios = document.querySelectorAll('input[name="paymentMethod"]');
+  const paymentRadios = document.querySelectorAll(
+    'input[name="paymentMethod"]'
+  );
   const payButtonText = document.getElementById("payButtonText");
   const summaryPaymentMethod = document.getElementById("summaryPaymentMethod");
   const checkoutOverlay = document.getElementById("checkoutOverlay");
@@ -50,8 +80,9 @@ document.addEventListener("DOMContentLoaded", function () {
     radio.addEventListener("change", function () {
       if (this.checked) {
         selectedPaymentMethod = this.value; // "payu" or "cod"
-        summaryPaymentMethod.textContent =
-          getPaymentMethodLabel(selectedPaymentMethod);
+        summaryPaymentMethod.textContent = getPaymentMethodLabel(
+          selectedPaymentMethod
+        );
         updateTotalAmount();
       }
     });
@@ -254,10 +285,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const discountEl = document.getElementById("discount");
     const totalEl = document.getElementById("totalAmount");
 
-    const subtotal =
-      parseFloat(subtotalEl.textContent.replace("₹", "")) || 0;
-    const discount =
-      parseFloat(discountEl.textContent.replace("₹", "")) || 0;
+    const subtotal = parseFloat(subtotalEl.textContent.replace("₹", "")) || 0;
+    const discount = parseFloat(discountEl.textContent.replace("₹", "")) || 0;
 
     const shippingCost = getDisplayShipping(subtotal, selectedPaymentMethod);
 
@@ -271,8 +300,9 @@ document.addEventListener("DOMContentLoaded", function () {
       payButtonText.textContent = `Pay ₹${total.toFixed(2)} with PayU`;
     }
 
-    summaryPaymentMethod.textContent =
-      getPaymentMethodLabel(selectedPaymentMethod);
+    summaryPaymentMethod.textContent = getPaymentMethodLabel(
+      selectedPaymentMethod
+    );
   }
 
   // =========================================================================

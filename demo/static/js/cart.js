@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
           await this.updateCartDisplay();
           this.showNotification("Added to cart!");
 
-          // ✅ Auto-open cart sidebar after adding
+          // Auto-open cart sidebar after adding
           setTimeout(() => {
             this.openCart();
           }, 300);

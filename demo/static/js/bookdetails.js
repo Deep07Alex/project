@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const buyNowBtn = document.querySelector('.buy-now');
     
     if (buyNowBtn) {
-        console.log("✅ Buy Now button found");
+        console.log("Buy Now button found");
         
         buyNowBtn.addEventListener('click', async function(e) {
             e.preventDefault();
@@ -52,10 +52,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 });
                 
                 const clearData = await clearResponse.json();
-                console.log('✅ Cart cleared:', clearData);
+                console.log('Cart cleared:', clearData);
                 
                 // Add the book
-                console.log('➕ Adding book to cart...');
+                console.log(' Adding book to cart...');
                 const addResponse = await fetch('/cart/add/', {
                     method: 'POST',
                     headers: {
@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 });
                 
                 const addData = await addResponse.json();
-                console.log('✅ Book added:', addData);
+                console.log(' Book added:', addData);
                 
                 if (!addData.success) {
                     throw new Error(addData.error || 'Failed to add book');
@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                 // Update quantity if needed
                 if (quantity > 1) {
-                    console.log('🔢 Updating quantity to', quantity);
+                    console.log('Updating quantity to', quantity);
                     const updateResponse = await fetch('/cart/update/', {
                         method: 'POST',
                         headers: {
@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     });
                     
                     const updateData = await updateResponse.json();
-                    console.log('✅ Quantity updated:', updateData);
+                    console.log('Quantity updated:', updateData);
                 }
                 
                 // Verify cart before redirect

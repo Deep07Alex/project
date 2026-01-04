@@ -60,9 +60,10 @@
     </div>
 
     <div class="action-buttons" style="text-align: center; margin-top: 30px;">
-        <a href="{% url 'checkout' %}" class="btn" style="background: #e20074; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-right: 10px;">
-            Try Payment Again
-        </a>
+        <!--  NEW: Clear lock and retry button -->
+        <button id="retryPaymentBtn" class="btn" style="background: #e20074; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-right: 10px; border: none; cursor: pointer;">
+            <i class="fas fa-redo mr-2"></i>Try Payment Again
+        </button>
         <a href="/" class="btn" style="background: #6b7280; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">
             Go to Home
         </a>
@@ -131,15 +132,6 @@
         font-size: 1.2rem;
     }
 
-    /* Generic grid wrapper inside blocks */
-    .order-details > div[style*="display: grid"],
-    .shipping-info > div[style*="display: grid"],
-    .shiprocket-info > div[style*="display: grid"] {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-    }
-
     .next-steps ul {
         list-style: none;
         padding: 0;
@@ -179,8 +171,7 @@
     }
 
     .action-buttons .btn:nth-child(2) {
-        /* second button can have different color, but inline style will still win if present */
-        background: #0288d1;
+        background: #6b7280;
     }
 
     .btn:hover {
@@ -188,87 +179,50 @@
         transition: opacity 0.2s;
     }
 
-    /* --------- RESPONSIVE BREAKPOINTS --------- */
-
-    /* Tablets and below */
-    @media (max-width: 900px) {
-        .payment-success-container {
-            margin: 24px auto;
-            padding: 16px;
-        }
-
-        .success-header h1 {
-            font-size: 1.6rem;
-        }
-    }
-
-    /* Mobiles */
+    /* Responsive */
     @media (max-width: 600px) {
-        .payment-success-container {
-            margin: 20px auto;
-            padding: 12px;
-        }
-
-        .success-header {
-            margin-bottom: 22px;
-        }
-
-        .success-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-
-        .success-header h1 {
-            font-size: 1.4rem;
-        }
-
-        .success-header p {
-            font-size: 0.9rem;
-        }
-
-        /* Collapse 2-column detail grids to 1 column */
-        .order-details > div[style*="grid-template-columns"],
-        .shipping-info > div[style*="grid-template-columns"],
-        .shiprocket-info > div[style*="grid-template-columns"] {
-            grid-template-columns: 1fr !important;
-            gap: 10px !important;
-        }
-
-        .order-details,
-        .shipping-info,
-        .shiprocket-info,
-        .next-steps {
-            padding: 14px !important;
-            margin-bottom: 14px !important;
-        }
-
-        .next-steps li {
-            font-size: 0.9rem;
-        }
-
         .action-buttons {
             flex-direction: column;
             align-items: stretch;
-            text-align: center !important;
-            margin-top: 20px !important;
         }
-
+        
         .action-buttons .btn {
             width: 100%;
-            padding: 10px 0 !important;
-        }
-    }
-
-    /* Small phones */
-    @media (max-width: 400px) {
-        .success-header h1 {
-            font-size: 1.25rem;
-        }
-
-        .success-icon {
-            font-size: 42px;
+            margin-right: 0 !important;
         }
     }
 </style>
 
+<script>
+// NEW: Clear lock and redirect to checkout
+document.getElementById('retryPaymentBtn').addEventListener('click', async function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Clearing...';
+    
+    try {
+        const response = await fetch('/api/clear-checkout-lock/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.cookie.match(/csrftoken=([\w-]+)/)?.[1] || '',
+                'Content-Type': 'application/json',
+            },
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = '/checkout/';  // Redirect to retry
+        } else {
+            alert('Failed to clear lock: ' + data.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-redo mr-2"></i>Try Payment Again';
+        }
+    } catch (error) {
+        alert('Network error: ' + error);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-redo mr-2"></i>Try Payment Again';
+    }
+});
+</script>
 {% endblock %}
